@@ -1,65 +1,132 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 
 export default function Home() {
+  const router = useRouter();
+  const [topic, setTopic] = useState("");
+  const [pageCount, setPageCount] = useState(8);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleGenerate = async () => {
+    if (!topic.trim()) return;
+    
+    setIsLoading(true);
+    
+    sessionStorage.setItem("ppt-topic", topic);
+    sessionStorage.setItem("ppt-pageCount", pageCount.toString());
+    
+    router.push("/generate");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen relative overflow-hidden flex items-center justify-center bg-slate-50">
+      {/* 动态背景层 */}
+      <div className="absolute inset-0 z-0 opacity-60">
+        <div className="absolute top-0 -left-40 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
+        <div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-40 left-20 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-4xl px-4">
+        <div className="flex flex-col items-center text-center mb-12 animate-fade-in-up">
+          <h1 className="text-6xl md:text-7xl font-black tracking-tight text-slate-900 mb-6 drop-shadow-sm">
+            神笔<span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 animate-gradient-x">PPT</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xl text-slate-600 max-w-2xl leading-relaxed">
+            让创意在指尖流淌，一键生成专业级演示文稿。
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* 主功能卡片 */}
+        <div className="glass-card rounded-3xl p-8 md:p-10 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+          <div className="space-y-8">
+            
+            {/* 输入区域 */}
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+                创意主题
+              </label>
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-200 to-blue-200 rounded-xl opacity-50 group-hover:opacity-100 transition duration-500 blur"></div>
+                <Textarea
+                  placeholder="描述你的 PPT 主题，越详细越好..."
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="relative min-h-[140px] bg-white border-slate-200 text-lg text-slate-900 placeholder:text-slate-400 focus:border-purple-500 focus:ring-purple-500/20 rounded-xl resize-none p-6 shadow-sm"
+                />
+              </div>
+              
+              {/* 快捷标签 */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                {["人工智能发展史", "探索火星计划", "全球气候变暖", "文艺复兴艺术", "中国传统节日", "大学生职业规划"].map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => setTopic(tag)}
+                    className="px-4 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 hover:border-purple-300 rounded-full transition-all hover:text-purple-600 hover:scale-105 shadow-sm"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 页数选择 */}
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                幻灯片页数
+              </label>
+              <div className="flex items-center gap-4">
+                <Input
+                  type="number"
+                  min={3}
+                  max={20}
+                  value={pageCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val)) setPageCount(Math.min(20, Math.max(3, val)));
+                  }}
+                  className="w-32 bg-white border-slate-200 text-lg font-bold text-center h-12 rounded-xl"
+                />
+                <span className="text-slate-500 text-sm">页 (3-20)</span>
+              </div>
+            </div>
+
+            {/* 提交按钮 */}
+            <Button
+              onClick={handleGenerate}
+              disabled={!topic.trim() || isLoading}
+              className="w-full h-16 text-xl font-bold text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 border-0 rounded-2xl shadow-lg shadow-purple-200/50 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>正在启动引擎...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="relative z-10">开始创作</span>
+                  <svg className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                </div>
+              )}
+            </Button>
+          </div>
         </div>
-      </main>
-    </div>
+        
+        {/* 底部版权 */}
+        <div className="mt-8 text-center text-xs text-slate-400 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
+          <p>© 2024 神笔PPT</p>
+        </div>
+      </div>
+    </main>
   );
 }
