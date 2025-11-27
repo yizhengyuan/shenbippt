@@ -2,6 +2,8 @@
 
 AI 驱动的 PPT 生成工具，输入主题一键生成精美演示文稿。
 
+<img width="1175" height="795" alt="image" src="https://github.com/user-attachments/assets/590c3e93-0514-422b-a04c-9a14da0910cb" />
+
 🔗 **在线体验**：https://shenbippt.netlify.app/
 
 ## ✨ 功能特点
