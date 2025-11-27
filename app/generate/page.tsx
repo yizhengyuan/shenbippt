@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { SlideCard } from "@/components/SlideCard";
 import { Slide, SlideOutline } from "@/types";
 
+// 禁用静态生成，强制使用客户端渲染
+export const dynamic = 'force-dynamic';
+
 type GenerationStatus = "idle" | "outline" | "images" | "done" | "error";
 
 export default function GeneratePage() {
