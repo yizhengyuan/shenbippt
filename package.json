@@ -2,6 +2,12 @@
   "name": "shenbippt",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://shenbippt.netlify.app/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yizhengyuan/shenbippt"
+  },
+  "description": "AI驱动的PPT生成工具 - 输入主题，一键生成精美演示文稿",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
