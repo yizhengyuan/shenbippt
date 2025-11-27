@@ -29,8 +29,23 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## 部署与环境变量
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+本项目在生成大纲与配图时需要 `SILICONFLOW_API_KEY`。请在本地与 Vercel 都配置该变量：
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 本地开发：在项目根目录创建或编辑 `.env.local`，加入：
+
+```
+SILICONFLOW_API_KEY=你的SiliconFlow密钥
+```
+
+- Vercel 配置：进入项目 Settings → Environment Variables，新增：
+  - `Key`: `SILICONFLOW_API_KEY`
+  - `Value`: 你的 SiliconFlow API Key
+  - `Environment`: 选择 `Production` 与 `Preview`
+  - 保存后触发一次重新部署
+
+部署完成后，可通过 `GET /api/health` 进行快速验证：
+
+- 返回 `{ status: "ok", hasApiKey: true }` 表示密钥已生效
+- 返回 500 且 `hasApiKey: false` 表示未配置或未生效
