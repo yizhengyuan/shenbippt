@@ -8,16 +8,16 @@ AI 驱动的 PPT 生成工具，输入主题一键生成精美演示文稿。
 
 ## ✨ 功能特点
 
-- 📝 **智能生成** - 基于 AI 自动生成演示文稿结构
-- 🎨 **自动配图** - AI 生成与内容匹配的精美配图
-- 📊 **一键导出** - 导出为标准 PPTX 格式文件
-- 🎯 **简单易用** - 只需输入主题即可生成完整 PPT
+- 📝 **智能生成** - 根据用户输入自动生成提纲
+- 🎨 **自动配图** - 由提纲生成与之匹配的背景
+- 📊 **一键导出** - 一键导出 PPTX 格式文件
+- 🎯 **简单易用** - 只需选择或输入主题和页数
 
 ## 🛠️ 技术实现
 
-- **框架**：Next.js 16 + React 19 + TypeScript
+- **框架**：Next.js 16 + React 19
 - **样式**：Tailwind CSS 4
-- **AI 服务**：SiliconFlow API（Qwen 大模型 + Kolors 图像生成）
+- **AI 服务**：SiliconFlow + Qwen 系列模型
 - **PPT 生成**：pptxgenjs
 - **UI 组件**：Radix UI + Lucide Icons
 - **部署**：Netlify / Vercel
