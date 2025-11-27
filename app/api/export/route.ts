@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const pptxBuffer = await createPptx(slides, title || "Presentation");
 
     // 返回 PPTX 文件
-    return new NextResponse(pptxBuffer, {
+    return new NextResponse(new Uint8Array(pptxBuffer), {
       status: 200,
       headers: {
         "Content-Type":
