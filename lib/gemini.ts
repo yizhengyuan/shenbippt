@@ -58,13 +58,20 @@ export async function generateOutline(
     throw new Error("SILICONFLOW_API_KEY is not configured");
   }
 
-  const prompt = `生成${pageCount}页PPT大纲，主题：${topic}
+  const prompt = `生成PPT大纲，主题：${topic}
 
-要求：第一页是封面，最后页是总结。每页包含title、subtitle、content(2句话)、bulletPoints(3个要点)、imagePrompt(英文背景描述)。
+【重要】必须生成正好 ${pageCount} 页，不多不少！
+
+要求：
+- 第1页：封面页
+- 第2到第${pageCount - 1}页：内容页
+- 第${pageCount}页：总结/感谢页
+
+每页必须包含：title、subtitle、content(2句话)、bulletPoints(3个要点)、imagePrompt(英文背景描述)。
 
 确定一个统一视觉风格(styleTheme)，所有imagePrompt必须包含相同的colorTone和style。
 
-返回JSON格式：
+返回JSON格式（slides数组必须有${pageCount}个元素）：
 {"styleTheme":{"name":"风格名","colorTone":"blue gradient","style":"minimalist","mood":"professional"},"slides":[{"title":"标题","subtitle":"副标题","content":"内容","bulletPoints":["要点1","要点2","要点3"],"imagePrompt":"[colorTone] [style] abstract background, geometric patterns, no text, 16:9"}]}
 
 只返回JSON，不要其他内容。`;
@@ -102,6 +109,27 @@ export async function generateOutline(
       .trim();
 
     const parsed = JSON.parse(cleanedText);
+    let slides = parsed.slides as SlideOutline[];
+    
+    // 校验并修正页数
+    if (slides.length < pageCount) {
+      console.warn(`AI only generated ${slides.length} slides, expected ${pageCount}. Padding...`);
+      // 补充缺少的页面
+      while (slides.length < pageCount) {
+        const lastSlide = slides[slides.length - 1];
+        slides.push({
+          title: slides.length === pageCount - 1 ? "总结与展望" : `第${slides.length + 1}部分`,
+          subtitle: "",
+          content: "内容待补充",
+          bulletPoints: ["要点1", "要点2", "要点3"],
+          imagePrompt: lastSlide?.imagePrompt || "blue gradient minimalist abstract background, geometric patterns, no text, 16:9",
+        });
+      }
+    } else if (slides.length > pageCount) {
+      console.warn(`AI generated ${slides.length} slides, expected ${pageCount}. Trimming...`);
+      slides = slides.slice(0, pageCount);
+    }
+    
     return {
       styleTheme: parsed.styleTheme || {
         name: "Professional Blue",
@@ -109,7 +137,7 @@ export async function generateOutline(
         style: "minimalist corporate",
         mood: "professional"
       },
-      slides: parsed.slides as SlideOutline[]
+      slides
     };
   } catch (error) {
     console.error("SiliconFlow API error:", error);
