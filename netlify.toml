@@ -5,5 +5,10 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Netlify Functions 配置
+[functions]
+  external_node_modules = ["pptxgenjs"]
+  node_bundler = "esbuild"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPptx } from "@/lib/pptx";
 import { ExportRequest } from "@/types";
 
+// 设置最大执行时间（秒）
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const body: ExportRequest = await request.json();

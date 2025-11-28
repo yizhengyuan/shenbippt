@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateOutline } from "@/lib/gemini";
 import { OutlineRequest } from "@/types";
 
+// 设置最大执行时间（秒）
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     const body: OutlineRequest = await request.json();
