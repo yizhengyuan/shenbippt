@@ -12,7 +12,7 @@ const SILICONFLOW_BASE_URL = "https://api.siliconflow.cn/v1";
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
-  maxRetries = 5
+  maxRetries = 3
 ): Promise<Response> {
   let lastError: Error | null = null;
   
@@ -20,13 +20,13 @@ async function fetchWithRetry(
     try {
       const response = await fetch(url, {
         ...options,
-        signal: AbortSignal.timeout(120000), // 120秒超时
+        signal: AbortSignal.timeout(25000), // 25秒超时，留足够余量
       });
       
       // 如果是 503 错误，等待后重试
       if (response.status === 503) {
         console.log(`Server busy (503), attempt ${i + 1}, retrying...`);
-        await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1)));
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
         continue;
       }
       
@@ -35,7 +35,7 @@ async function fetchWithRetry(
       lastError = error as Error;
       console.log(`Attempt ${i + 1} failed:`, (error as Error).message);
       // 等待后重试
-      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
     }
   }
   
@@ -60,47 +60,16 @@ export async function generateOutline(
     throw new Error("SILICONFLOW_API_KEY is not configured");
   }
 
-  const prompt = `你是一个专业的PPT大纲生成助手。请根据以下主题生成一个${pageCount}页的PPT大纲。
+  const prompt = `生成${pageCount}页PPT大纲，主题：${topic}
 
-主题：${topic}
+要求：第一页是封面，最后页是总结。每页包含title、subtitle、content(2句话)、bulletPoints(3个要点)、imagePrompt(英文背景描述)。
 
-要求：
-1. 生成正好${pageCount}页的内容
-2. 第一页应该是标题页/封面（包含主题和副标题）
-3. 最后一页应该是总结或感谢页
-4. 每页必须包含丰富的内容：
-   - title: 页面主标题
-   - subtitle: 页面副标题（可选，用于补充说明）
-   - content: 一段详细的内容描述（3-5句话）
-   - bulletPoints: 3-5个要点，每个要点是一句完整的话
-5. 首先确定一个统一的视觉风格主题，所有页面的背景都要遵循这个风格
-6. imagePrompt 必须包含统一的风格描述，确保所有页面视觉风格一致
+确定一个统一视觉风格(styleTheme)，所有imagePrompt必须包含相同的colorTone和style。
 
-请以JSON格式返回，格式如下：
-{
-  "styleTheme": {
-    "name": "风格名称，如：Corporate Blue",
-    "colorTone": "统一的色调，如：deep blue and white, dark gradient with gold accents",
-    "style": "设计风格，如：minimalist, corporate, modern tech",
-    "mood": "整体氛围，如：professional, elegant, innovative"
-  },
-  "slides": [
-    {
-      "title": "页面主标题",
-      "subtitle": "页面副标题（可选）",
-      "content": "详细的内容描述，3-5句话，解释该页面的核心内容",
-      "bulletPoints": ["要点1：完整的一句话", "要点2：完整的一句话", "要点3：完整的一句话"],
-      "imagePrompt": "English description for background image. MUST include: [styleTheme colorTone] [styleTheme style] background, [specific scene/elements for this slide], abstract geometric patterns, no text, no people faces, suitable for presentation, 16:9"
-    }
-  ]
-}
+返回JSON格式：
+{"styleTheme":{"name":"风格名","colorTone":"blue gradient","style":"minimalist","mood":"professional"},"slides":[{"title":"标题","subtitle":"副标题","content":"内容","bulletPoints":["要点1","要点2","要点3"],"imagePrompt":"[colorTone] [style] abstract background, geometric patterns, no text, 16:9"}]}
 
-重要提示：
-- imagePrompt 中必须包含 styleTheme 中定义的 colorTone 和 style，确保视觉统一
-- 每个 imagePrompt 应该是抽象或图案化的背景，避免过于具体的图像
-- 建议使用渐变、几何图形、线条等抽象元素
-
-只返回JSON，不要包含其他文字或markdown代码块标记。`;
+只返回JSON，不要其他内容。`;
 
   try {
     const response = await fetchWithRetry(
@@ -112,7 +81,7 @@ export async function generateOutline(
           "Authorization": `Bearer ${siliconFlowApiKey}`,
         },
         body: JSON.stringify({
-          model: "Qwen/Qwen2.5-72B-Instruct",
+          model: "Qwen/Qwen2.5-7B-Instruct", // 使用更快的7B模型
           messages: [
             {
               role: "user",
@@ -120,7 +89,7 @@ export async function generateOutline(
             },
           ],
           temperature: 0.7,
-          max_tokens: 4096,
+          max_tokens: 2048, // 减少token数量加快响应
         }),
       }
     );
