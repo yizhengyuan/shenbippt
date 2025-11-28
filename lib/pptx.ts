@@ -43,13 +43,13 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
     }
 
     // 添加半透明背景层 - 增强不透明度以提高文字可读性
-    // transparency: 35 表示 65% 不透明，比之前的 50 更暗
+    // transparency: 70 表示 30% 不透明度的黑色
     slide.addShape("rect", {
       x: 0,
       y: 0,
       w: "100%",
       h: "100%",
-      fill: { color: "000000", transparency: 35 },
+      fill: { color: "000000", transparency: 70 },
     });
 
     // 封面页和结尾页使用居中大标题布局

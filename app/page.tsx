@@ -124,7 +124,7 @@ export default function Home() {
         
         {/* 底部版权 */}
         <div className="mt-8 text-center text-xs text-slate-400 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
-          <p>© 2024 神笔PPT</p>
+          <p>© 2025 神笔PPT</p>
         </div>
       </div>
     </main>

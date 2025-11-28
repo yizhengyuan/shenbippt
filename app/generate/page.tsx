@@ -290,10 +290,11 @@ export default function GeneratePage() {
           }
         }
 
-        // 半透明遮罩层
+        // 半透明遮罩层 - 提高透明度以避免图片过暗
+        // transparency: 70 表示 30% 不透明度的黑色
         slide.addShape("rect", {
           x: 0, y: 0, w: "100%", h: "100%",
-          fill: { color: "000000", transparency: 40 },
+          fill: { color: "000000", transparency: 70 },
         });
 
         if (isFirstSlide || isLastSlide) {
