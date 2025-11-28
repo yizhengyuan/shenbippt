@@ -10,55 +10,7 @@ const textShadow = {
   angle: 45,
 };
 
-// 下载远程图片并转换为 base64
-async function downloadImageAsBase64(url: string): Promise<string> {
-  try {
-    if (url.startsWith("data:")) return url; // 已经是 base64
-    
-    const response = await fetch(url, { 
-      signal: AbortSignal.timeout(15000) // 15秒超时
-    });
-    const arrayBuffer = await response.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
-    const contentType = response.headers.get("content-type") || "image/png";
-    return `data:${contentType};base64,${base64}`;
-  } catch (error) {
-    console.error("Failed to download image:", url, error);
-    return url; // 下载失败返回原 URL
-  }
-}
-
-// 并行预下载所有远程图片
-async function preloadImages(slides: Slide[]): Promise<Map<string, string>> {
-  const imageMap = new Map<string, string>();
-  const remoteUrls = slides
-    .filter(s => s.imageUrl && !s.imageUrl.startsWith("data:"))
-    .map(s => s.imageUrl);
-  
-  if (remoteUrls.length === 0) return imageMap;
-  
-  console.log(`Preloading ${remoteUrls.length} images in parallel...`);
-  
-  // 并行下载所有图片
-  const results = await Promise.all(
-    remoteUrls.map(async (url) => {
-      const base64 = await downloadImageAsBase64(url);
-      return { url, base64 };
-    })
-  );
-  
-  results.forEach(({ url, base64 }) => {
-    imageMap.set(url, base64);
-  });
-  
-  console.log(`Preloaded ${imageMap.size} images`);
-  return imageMap;
-}
-
 export async function createPptx(slides: Slide[], title: string): Promise<Buffer> {
-  // 并行预下载所有远程图片（兜底优化）
-  const imageMap = await preloadImages(slides);
-  
   const pptx = new PptxGenJS();
   
   pptx.title = title;
@@ -74,30 +26,19 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
     const isFirstSlide = slideData.pageNumber === 1;
     const isLastSlide = slideData.pageNumber === slides.length;
     
-    // 添加背景图片（优先使用预下载的 base64）
-    if (slideData.imageUrl) {
-      // 检查是否有预下载的 base64 版本
-      const imageData = slideData.imageUrl.startsWith("data:")
-        ? slideData.imageUrl
-        : imageMap.get(slideData.imageUrl) || slideData.imageUrl;
-      
-      if (imageData.startsWith("data:")) {
+    // 添加背景图片（只使用 base64，确保可靠性）
+    if (slideData.imageUrl && slideData.imageUrl.startsWith("data:")) {
+      try {
         slide.addImage({
-          data: imageData,
+          data: slideData.imageUrl,
           x: 0,
           y: 0,
           w: "100%",
           h: "100%",
         });
-      } else {
-        // 最后兜底：使用远程 URL
-        slide.addImage({
-          path: imageData,
-          x: 0,
-          y: 0,
-          w: "100%",
-          h: "100%",
-        });
+      } catch (imgError) {
+        console.error(`Failed to add image for slide ${slideData.pageNumber}:`, imgError);
+        // 图片添加失败，继续处理其他内容
       }
     }
 

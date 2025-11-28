@@ -67,19 +67,34 @@ export default function GeneratePage() {
     try {
       // 如果已经是 base64，直接返回
       if (url.startsWith("data:")) return url;
+      if (!url || url.trim() === "") return "";
       
-      const response = await fetch(url);
+      // 添加超时控制（10秒）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        console.error("Failed to fetch image:", response.status);
+        return ""; // 返回空字符串表示无图片
+      }
+      
       const blob = await response.blob();
       
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
+        reader.onerror = () => {
+          console.error("FileReader error");
+          resolve(""); // 失败时返回空字符串
+        };
         reader.readAsDataURL(blob);
       });
     } catch (error) {
       console.error("Failed to convert image to base64:", error);
-      return url; // 失败时返回原 URL
+      return ""; // 失败时返回空字符串，避免传远程 URL
     }
   };
 
