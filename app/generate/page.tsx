@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
+import PptxGenJS from "pptxgenjs";
 import { Button } from "@/components/ui/button";
 import { SlideCard } from "@/components/SlideCard";
 import { Slide, SlideOutline, StyleTheme } from "@/types";
@@ -259,37 +260,112 @@ export default function GeneratePage() {
     }
   };
 
-  // 导出 PPTX
+  // 客户端生成 PPTX（避免服务器请求大小限制）
   const exportPptx = async () => {
     if (isExporting) return;
 
     try {
       setIsExporting(true);
-      const response = await fetch("/api/export", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slides, title: topic }),
-      });
+      
+      const pptx = new PptxGenJS();
+      pptx.title = topic;
+      pptx.author = "神笔PPT";
+      pptx.subject = topic;
+      
+      // 设置幻灯片尺寸为 16:9
+      pptx.defineLayout({ name: "LAYOUT_16x9", width: 10, height: 5.625 });
+      pptx.layout = "LAYOUT_16x9";
 
-      if (!response.ok) {
-        throw new Error("Failed to export PPTX");
+      // 文字阴影配置
+      const textShadow = { type: "outer" as const, color: "000000", blur: 3, offset: 1, angle: 45 };
+
+      for (const slideData of slides) {
+        const slide = pptx.addSlide();
+        const isFirstSlide = slideData.pageNumber === 1;
+        const isLastSlide = slideData.pageNumber === slides.length;
+        
+        // 添加背景图片
+        if (slideData.imageUrl && slideData.imageUrl.startsWith("data:")) {
+          try {
+            slide.addImage({ data: slideData.imageUrl, x: 0, y: 0, w: "100%", h: "100%" });
+          } catch (e) {
+            console.error("Failed to add image:", e);
+          }
+        }
+
+        // 半透明遮罩层
+        slide.addShape("rect", {
+          x: 0, y: 0, w: "100%", h: "100%",
+          fill: { color: "000000", transparency: 35 },
+        });
+
+        if (isFirstSlide || isLastSlide) {
+          // 封面/结尾页
+          slide.addText(slideData.title, {
+            x: 0.5, y: 1.8, w: 9, h: 1.2,
+            fontSize: 44, fontFace: "Microsoft YaHei", color: "FFFFFF",
+            bold: true, align: "center", valign: "middle", shadow: textShadow,
+          });
+          if (slideData.subtitle) {
+            slide.addText(slideData.subtitle, {
+              x: 0.5, y: 3.0, w: 9, h: 0.8,
+              fontSize: 24, fontFace: "Microsoft YaHei", color: "E0E0E0",
+              align: "center", valign: "middle", shadow: textShadow,
+            });
+          }
+          if (slideData.content && !isLastSlide) {
+            slide.addText(slideData.content, {
+              x: 1, y: 4.0, w: 8, h: 1,
+              fontSize: 16, fontFace: "Microsoft YaHei", color: "CCCCCC",
+              align: "center", valign: "top", shadow: textShadow,
+            });
+          }
+        } else {
+          // 内容页
+          slide.addText(slideData.title, {
+            x: 0.5, y: 0.3, w: 9, h: 0.8,
+            fontSize: 32, fontFace: "Microsoft YaHei", color: "FFFFFF",
+            bold: true, align: "left", valign: "middle", shadow: textShadow,
+          });
+          if (slideData.subtitle) {
+            slide.addText(slideData.subtitle, {
+              x: 0.5, y: 1.0, w: 9, h: 0.5,
+              fontSize: 18, fontFace: "Microsoft YaHei", color: "E0E0E0",
+              align: "left", valign: "middle", shadow: textShadow,
+            });
+          }
+          const contentY = slideData.subtitle ? 1.6 : 1.2;
+          slide.addText(slideData.content, {
+            x: 0.5, y: contentY, w: 9, h: 1.0,
+            fontSize: 14, fontFace: "Microsoft YaHei", color: "DDDDDD",
+            align: "left", valign: "top", shadow: textShadow,
+          });
+          if (slideData.bulletPoints && slideData.bulletPoints.length > 0) {
+            const bulletTexts = slideData.bulletPoints.map(point => ({
+              text: point,
+              options: { 
+                bullet: { type: "bullet" as const, code: "25CF" },
+                fontSize: 16, color: "FFFFFF", fontFace: "Microsoft YaHei", shadow: textShadow,
+              }
+            }));
+            slide.addText(bulletTexts, {
+              x: 0.5, y: contentY + 1.1, w: 9, h: 3.0,
+              valign: "top", paraSpaceAfter: 8,
+            });
+          }
+        }
+        
+        // 页码
+        slide.addText(`${slideData.pageNumber}`, {
+          x: 9, y: 5.1, w: 0.5, h: 0.4,
+          fontSize: 12, fontFace: "Arial", color: "AAAAAA",
+          align: "right", shadow: textShadow,
+        });
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `${topic}.pptx`;
-      document.body.appendChild(a);
-      a.click();
-      
-      // 稍微延迟清理，确保下载触发
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        setIsExporting(false);
-      }, 1000);
+      // 直接在浏览器生成并下载
+      await pptx.writeFile({ fileName: `${topic}.pptx` });
+      setIsExporting(false);
     } catch (err) {
       console.error("Export error:", err);
       alert("导出失败，请重试");
