@@ -1,12 +1,18 @@
 import { SlideOutline } from "@/types";
 
 const siliconFlowApiKey = process.env.SILICONFLOW_API_KEY;
+const modelScopeApiKey = process.env.MODELSCOPE_API_KEY;
 
 if (!siliconFlowApiKey) {
   console.warn("Warning: SILICONFLOW_API_KEY is not set");
 }
 
+if (!modelScopeApiKey) {
+  console.warn("Warning: MODELSCOPE_API_KEY is not set, Z-Image will not be available");
+}
+
 const SILICONFLOW_BASE_URL = "https://api.siliconflow.cn/v1";
+const MODELSCOPE_API_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis";
 
 // 带重试的 fetch 函数（支持 503 重试）
 async function fetchWithRetry(
@@ -130,19 +136,112 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function generateImage(prompt: string, styleTheme?: { colorTone: string; style: string; mood: string }): Promise<string> {
+// Z-Image (通义万相) 图片生成 - 更快的模型
+async function generateImageWithZImage(prompt: string): Promise<string | null> {
+  if (!modelScopeApiKey) {
+    console.log("ModelScope API key not configured, skipping Z-Image");
+    return null;
+  }
+
+  try {
+    console.log("Trying Z-Image (DashScope) for faster generation...");
+    
+    // 使用阿里云 DashScope API (通义万相)
+    const response = await fetch(MODELSCOPE_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${modelScopeApiKey}`,
+        "X-DashScope-Async": "enable", // 异步模式
+      },
+      body: JSON.stringify({
+        model: "wanx-v1", // 通义万相模型
+        input: {
+          prompt: prompt,
+        },
+        parameters: {
+          size: "1024*576",
+          n: 1,
+          style: "<auto>",
+        },
+      }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("DashScope API error:", errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log("DashScope response:", JSON.stringify(data, null, 2));
+    
+    // 异步任务，需要轮询获取结果
+    if (data.output?.task_id) {
+      const taskId = data.output.task_id;
+      const imageUrl = await pollDashScopeTask(taskId);
+      return imageUrl;
+    }
+    
+    // 同步返回的情况
+    if (data.output?.results?.[0]?.url) {
+      return data.output.results[0].url;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Z-Image generation failed:", error);
+    return null;
+  }
+}
+
+// 轮询 DashScope 异步任务
+async function pollDashScopeTask(taskId: string, maxAttempts = 30): Promise<string | null> {
+  const taskUrl = `https://dashscope.aliyuncs.com/api/v1/tasks/${taskId}`;
+  
+  for (let i = 0; i < maxAttempts; i++) {
+    await delay(1000); // 每秒查询一次
+    
+    try {
+      const response = await fetch(taskUrl, {
+        headers: {
+          "Authorization": `Bearer ${modelScopeApiKey}`,
+        },
+      });
+      
+      if (!response.ok) continue;
+      
+      const data = await response.json();
+      const status = data.output?.task_status;
+      
+      if (status === "SUCCEEDED") {
+        const imageUrl = data.output?.results?.[0]?.url;
+        if (imageUrl) {
+          console.log("Z-Image generation succeeded!");
+          return imageUrl;
+        }
+      } else if (status === "FAILED") {
+        console.error("Z-Image task failed:", data);
+        return null;
+      }
+      // PENDING 或 RUNNING 状态继续等待
+    } catch (error) {
+      console.error("Poll error:", error);
+    }
+  }
+  
+  console.error("Z-Image task timeout");
+  return null;
+}
+
+// SiliconFlow 图片生成（备用方案）
+async function generateImageWithSiliconFlow(prompt: string): Promise<string> {
   if (!siliconFlowApiKey) {
     throw new Error("SILICONFLOW_API_KEY is not configured");
   }
 
-  // 构建统一风格的增强提示词
-  const stylePrefix = styleTheme 
-    ? `${styleTheme.colorTone} color scheme, ${styleTheme.style} design style, ${styleTheme.mood} atmosphere.`
-    : "deep blue and white gradient, minimalist corporate design style, professional atmosphere.";
-  
-  const enhancedPrompt = `Abstract presentation slide background. ${stylePrefix} ${prompt}. IMPORTANT: Use consistent color palette throughout, abstract geometric patterns, soft gradients, subtle shapes, no text, no human faces, no realistic photos, clean and unified visual style, high quality, 16:9 aspect ratio.`;
-
-  const maxRetries = 10;
+  const maxRetries = 5;
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -154,54 +253,65 @@ export async function generateImage(prompt: string, styleTheme?: { colorTone: st
         },
         body: JSON.stringify({
           model: "Kwai-Kolors/Kolors",
-          prompt: enhancedPrompt,
+          prompt: prompt,
           image_size: "1024x576",
-          num_inference_steps: 25,
+          num_inference_steps: 20, // 减少步数加快速度
         }),
-        signal: AbortSignal.timeout(60000),
+        signal: AbortSignal.timeout(30000),
       });
 
-      // 429 速率限制 - 等待后重试
       if (response.status === 429) {
-        const waitTime = 5000 * (attempt + 1); // 5s, 10s, 15s...
-        console.log(`Rate limited (429), waiting ${waitTime/1000}s before retry ${attempt + 1}...`);
+        const waitTime = 3000 * (attempt + 1);
+        console.log(`Rate limited, waiting ${waitTime/1000}s...`);
         await delay(waitTime);
         continue;
       }
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("SiliconFlow Image API error:", errorText);
-        throw new Error(`SiliconFlow Image API error: ${response.status}`);
+        console.error("SiliconFlow API error:", errorText);
+        throw new Error(`SiliconFlow API error: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("Image generation response:", JSON.stringify(data, null, 2));
       
-      // SiliconFlow 返回图片 URL
-      if (data.images && data.images.length > 0) {
+      if (data.images?.[0]?.url) {
         return data.images[0].url;
       }
-      
-      // 备用格式
-      if (data.data && data.data.length > 0) {
-        if (data.data[0].url) {
-          return data.data[0].url;
-        }
-        if (data.data[0].b64_json) {
-          return `data:image/png;base64,${data.data[0].b64_json}`;
-        }
+      if (data.data?.[0]?.url) {
+        return data.data[0].url;
+      }
+      if (data.data?.[0]?.b64_json) {
+        return `data:image/png;base64,${data.data[0].b64_json}`;
       }
 
-      throw new Error("No image generated");
+      throw new Error("No image in response");
     } catch (error) {
-      console.error(`Image generation attempt ${attempt + 1} failed:`, error);
-      if (attempt === maxRetries - 1) {
-        throw error;
-      }
-      await delay(3000 * (attempt + 1));
+      console.error(`SiliconFlow attempt ${attempt + 1} failed:`, error);
+      if (attempt === maxRetries - 1) throw error;
+      await delay(2000 * (attempt + 1));
     }
   }
   
-  throw new Error("Max retries exceeded for image generation");
+  throw new Error("Max retries exceeded");
+}
+
+// 主图片生成函数 - 优先使用 Z-Image，失败则回退到 SiliconFlow
+export async function generateImage(prompt: string, styleTheme?: { colorTone: string; style: string; mood: string }): Promise<string> {
+  // 构建统一风格的增强提示词
+  const stylePrefix = styleTheme 
+    ? `${styleTheme.colorTone} color scheme, ${styleTheme.style} design style, ${styleTheme.mood} atmosphere.`
+    : "deep blue and white gradient, minimalist corporate design style, professional atmosphere.";
+  
+  const enhancedPrompt = `Abstract presentation slide background. ${stylePrefix} ${prompt}. Use consistent color palette, abstract geometric patterns, soft gradients, no text, no human faces, clean visual style, high quality, 16:9 aspect ratio.`;
+
+  // 1. 首先尝试 Z-Image（更快）
+  const zImageResult = await generateImageWithZImage(enhancedPrompt);
+  if (zImageResult) {
+    return zImageResult;
+  }
+
+  // 2. 回退到 SiliconFlow
+  console.log("Falling back to SiliconFlow...");
+  return generateImageWithSiliconFlow(enhancedPrompt);
 }
