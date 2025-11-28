@@ -5,7 +5,7 @@ import { ImageRequest } from "@/types";
 export async function POST(request: NextRequest) {
   try {
     const body: ImageRequest = await request.json();
-    const { prompt } = body;
+    const { prompt, styleTheme } = body;
 
     if (!prompt) {
       return NextResponse.json(
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const imageUrl = await generateImage(prompt);
+    const imageUrl = await generateImage(prompt, styleTheme);
 
     return NextResponse.json({ imageUrl });
   } catch (error) {

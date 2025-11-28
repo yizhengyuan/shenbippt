@@ -42,10 +42,20 @@ async function fetchWithRetry(
   throw lastError || new Error("Max retries exceeded");
 }
 
+export interface GeneratedOutline {
+  styleTheme: {
+    name: string;
+    colorTone: string;
+    style: string;
+    mood: string;
+  };
+  slides: SlideOutline[];
+}
+
 export async function generateOutline(
   topic: string,
   pageCount: number
-): Promise<SlideOutline[]> {
+): Promise<GeneratedOutline> {
   if (!siliconFlowApiKey) {
     throw new Error("SILICONFLOW_API_KEY is not configured");
   }
@@ -56,21 +66,39 @@ export async function generateOutline(
 
 要求：
 1. 生成正好${pageCount}页的内容
-2. 第一页应该是标题页/封面
+2. 第一页应该是标题页/封面（包含主题和副标题）
 3. 最后一页应该是总结或感谢页
-4. 每页包含一个标题和简短的内容要点
-5. 为每页生成一个适合的图片描述（英文），用于AI生成配图
+4. 每页必须包含丰富的内容：
+   - title: 页面主标题
+   - subtitle: 页面副标题（可选，用于补充说明）
+   - content: 一段详细的内容描述（3-5句话）
+   - bulletPoints: 3-5个要点，每个要点是一句完整的话
+5. 首先确定一个统一的视觉风格主题，所有页面的背景都要遵循这个风格
+6. imagePrompt 必须包含统一的风格描述，确保所有页面视觉风格一致
 
 请以JSON格式返回，格式如下：
 {
+  "styleTheme": {
+    "name": "风格名称，如：Corporate Blue",
+    "colorTone": "统一的色调，如：deep blue and white, dark gradient with gold accents",
+    "style": "设计风格，如：minimalist, corporate, modern tech",
+    "mood": "整体氛围，如：professional, elegant, innovative"
+  },
   "slides": [
     {
-      "title": "页面标题",
-      "content": "页面内容要点（简短，2-3句话）",
-      "imagePrompt": "English description for image generation, be specific and descriptive, include style keywords like: professional, modern, minimalist, colorful"
+      "title": "页面主标题",
+      "subtitle": "页面副标题（可选）",
+      "content": "详细的内容描述，3-5句话，解释该页面的核心内容",
+      "bulletPoints": ["要点1：完整的一句话", "要点2：完整的一句话", "要点3：完整的一句话"],
+      "imagePrompt": "English description for background image. MUST include: [styleTheme colorTone] [styleTheme style] background, [specific scene/elements for this slide], abstract geometric patterns, no text, no people faces, suitable for presentation, 16:9"
     }
   ]
 }
+
+重要提示：
+- imagePrompt 中必须包含 styleTheme 中定义的 colorTone 和 style，确保视觉统一
+- 每个 imagePrompt 应该是抽象或图案化的背景，避免过于具体的图像
+- 建议使用渐变、几何图形、线条等抽象元素
 
 只返回JSON，不要包含其他文字或markdown代码块标记。`;
 
@@ -113,7 +141,15 @@ export async function generateOutline(
       .trim();
 
     const parsed = JSON.parse(cleanedText);
-    return parsed.slides as SlideOutline[];
+    return {
+      styleTheme: parsed.styleTheme || {
+        name: "Professional Blue",
+        colorTone: "deep blue and white gradient",
+        style: "minimalist corporate",
+        mood: "professional"
+      },
+      slides: parsed.slides as SlideOutline[]
+    };
   } catch (error) {
     console.error("SiliconFlow API error:", error);
     throw error;
@@ -125,12 +161,17 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function generateImage(prompt: string): Promise<string> {
+export async function generateImage(prompt: string, styleTheme?: { colorTone: string; style: string; mood: string }): Promise<string> {
   if (!siliconFlowApiKey) {
     throw new Error("SILICONFLOW_API_KEY is not configured");
   }
 
-  const enhancedPrompt = `Professional presentation slide background. ${prompt}. Style: modern, clean, minimalist design, suitable for presentation, no text, high quality, 16:9 aspect ratio, vibrant colors.`;
+  // 构建统一风格的增强提示词
+  const stylePrefix = styleTheme 
+    ? `${styleTheme.colorTone} color scheme, ${styleTheme.style} design style, ${styleTheme.mood} atmosphere.`
+    : "deep blue and white gradient, minimalist corporate design style, professional atmosphere.";
+  
+  const enhancedPrompt = `Abstract presentation slide background. ${stylePrefix} ${prompt}. IMPORTANT: Use consistent color palette throughout, abstract geometric patterns, soft gradients, subtle shapes, no text, no human faces, no realistic photos, clean and unified visual style, high quality, 16:9 aspect ratio.`;
 
   const maxRetries = 10;
   

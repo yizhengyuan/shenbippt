@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
 import { SlideCard } from "@/components/SlideCard";
-import { Slide, SlideOutline } from "@/types";
+import { Slide, SlideOutline, StyleTheme } from "@/types";
 
 // 禁用静态生成，强制使用客户端渲染
 export const dynamic = 'force-dynamic';
@@ -24,6 +24,8 @@ export default function GeneratePage() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  // 保存统一的风格主题
+  const styleThemeRef = useRef<StyleTheme | null>(null);
 
   // 从 sessionStorage 获取参数
   useEffect(() => {
@@ -60,8 +62,8 @@ export default function GeneratePage() {
   // 延迟函数
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // 生成大纲
-  const generateOutline = useCallback(async (): Promise<SlideOutline[]> => {
+  // 生成大纲（同时返回统一风格主题）
+  const generateOutlineWithTheme = useCallback(async (): Promise<{ slides: SlideOutline[]; styleTheme: StyleTheme }> => {
     const response = await fetch("/api/outline", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -73,17 +75,17 @@ export default function GeneratePage() {
     }
 
     const data = await response.json();
-    return data.slides;
+    return { slides: data.slides, styleTheme: data.styleTheme };
   }, [topic, pageCount]);
 
-  // 生成单张图片（带重试）
-  const generateImage = async (prompt: string, retries = 3): Promise<string> => {
+  // 生成单张图片（带重试，传递统一风格）
+  const generateImage = async (prompt: string, styleTheme?: StyleTheme, retries = 3): Promise<string> => {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
         const response = await fetch("/api/image", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt, styleTheme }),
         });
 
         if (response.status === 429) {
@@ -117,23 +119,26 @@ export default function GeneratePage() {
     setElapsedTime(0);
 
     try {
-      // 1. 生成大纲
-      const outlines = await generateOutline();
+      // 1. 生成大纲（包含统一风格主题）
+      const { slides: outlines, styleTheme } = await generateOutlineWithTheme();
+      styleThemeRef.current = styleTheme; // 保存风格主题
       setProgress(10);
 
-      // 2. 初始化幻灯片
+      // 2. 初始化幻灯片（包含新字段）
       const initialSlides: Slide[] = outlines.map((outline, index) => ({
         id: uuidv4(),
         pageNumber: index + 1,
         title: outline.title,
+        subtitle: outline.subtitle,
         content: outline.content,
+        bulletPoints: outline.bulletPoints,
         imageUrl: "",
         imagePrompt: outline.imagePrompt,
       }));
       setSlides(initialSlides);
       setStatus("images");
 
-      // 3. 并发生成图片（控制并发数为 2）
+      // 3. 并发生成图片（控制并发数为 2，使用统一风格）
       const concurrency = 2;
       const totalSlides = initialSlides.length;
       let completedCount = 0;
@@ -152,7 +157,8 @@ export default function GeneratePage() {
             // 添加随机延迟，避免完全同时请求
             await delay(Math.random() * 1000 + 500);
             
-            const imageUrl = await generateImage(slide.imagePrompt);
+            // 传递统一风格主题给图片生成
+            const imageUrl = await generateImage(slide.imagePrompt, styleTheme);
             setSlides((prev) =>
               prev.map((s, idx) =>
                 idx === index ? { ...s, imageUrl } : s
@@ -181,7 +187,7 @@ export default function GeneratePage() {
       setStatus("error");
       setErrorMessage(err instanceof Error ? err.message : "生成失败，请重试");
     }
-  }, [topic, generateOutline]);
+  }, [topic, generateOutlineWithTheme]);
 
   useEffect(() => {
     if (topic && status === "idle") {
@@ -189,7 +195,7 @@ export default function GeneratePage() {
     }
   }, [topic, status, startGeneration]);
 
-  // 重新生成单页
+  // 重新生成单页（使用保存的统一风格）
   const regenerateSlide = async (slideId: string) => {
     const slide = slides.find((s) => s.id === slideId);
     if (!slide) return;
@@ -197,7 +203,8 @@ export default function GeneratePage() {
     setRegeneratingSlides((prev) => new Set(prev).add(slideId));
 
     try {
-      const imageUrl = await generateImage(slide.imagePrompt);
+      // 使用保存的统一风格主题
+      const imageUrl = await generateImage(slide.imagePrompt, styleThemeRef.current || undefined);
       setSlides((prev) =>
         prev.map((s) => (s.id === slideId ? { ...s, imageUrl } : s))
       );

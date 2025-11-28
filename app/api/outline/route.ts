@@ -21,9 +21,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const slides = await generateOutline(topic, pageCount);
+    const result = await generateOutline(topic, pageCount);
 
-    return NextResponse.json({ slides });
+    return NextResponse.json({ 
+      slides: result.slides,
+      styleTheme: result.styleTheme 
+    });
   } catch (error) {
     console.error("Error generating outline:", error);
     return NextResponse.json(
