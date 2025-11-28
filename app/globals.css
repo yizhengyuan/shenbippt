@@ -45,24 +45,36 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* 背景色：极淡的米色，温暖自然 */
+  --background: oklch(0.98 0.01 100); 
+  --foreground: oklch(0.25 0.02 145); /* 深森林绿 */
+  
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.25 0.02 145);
+  
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.25 0.02 145);
+  
+  /* 主色调：清新自然的翠绿色 */
+  --primary: oklch(0.55 0.18 145); 
+  --primary-foreground: oklch(0.98 0 0);
+  
+  /* 次要色：浅草绿 */
+  --secondary: oklch(0.95 0.04 145); 
+  --secondary-foreground: oklch(0.4 0.1 145);
+  
+  --muted: oklch(0.96 0.01 145);
+  --muted-foreground: oklch(0.5 0.05 145);
+  
+  /* 强调色：明亮的嫩绿色 */
+  --accent: oklch(0.95 0.04 145);
+  --accent-foreground: oklch(0.4 0.1 145);
+  
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.9 0.02 145);
+  --input: oklch(0.9 0.02 145);
+  --ring: oklch(0.6 0.15 145);
+  
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -79,24 +91,24 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.15 0.02 145);
+  --foreground: oklch(0.95 0.02 145);
+  --card: oklch(0.2 0.02 145);
+  --card-foreground: oklch(0.95 0.02 145);
+  --popover: oklch(0.2 0.02 145);
+  --popover-foreground: oklch(0.95 0.02 145);
+  --primary: oklch(0.65 0.18 145);
+  --primary-foreground: oklch(0.15 0.02 145);
+  --secondary: oklch(0.25 0.04 145);
+  --secondary-foreground: oklch(0.95 0.02 145);
+  --muted: oklch(0.25 0.02 145);
+  --muted-foreground: oklch(0.7 0.05 145);
+  --accent: oklch(0.25 0.04 145);
+  --accent-foreground: oklch(0.95 0.02 145);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: oklch(0.3 0.02 145);
+  --input: oklch(0.3 0.02 145);
+  --ring: oklch(0.5 0.15 145);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -117,10 +129,11 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    /* 使用自然的背景色，搭配柔和的绿色光晕 */
+    @apply bg-background text-foreground font-sans antialiased;
     background-image: 
-      radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.05), transparent 25%),
-      radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 25%);
+      radial-gradient(circle at 15% 50%, oklch(0.95 0.05 145 / 0.4), transparent 25%),
+      radial-gradient(circle at 85% 30%, oklch(0.92 0.08 160 / 0.3), transparent 25%);
   }
 }
 
@@ -131,8 +144,8 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.2); }
-  50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.4); }
+  0%, 100% { box-shadow: 0 0 20px oklch(0.7 0.15 145 / 0.2); }
+  50% { box-shadow: 0 0 40px oklch(0.7 0.15 145 / 0.4); }
 }
 
 @keyframes shimmer {

@@ -24,20 +24,20 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen relative overflow-hidden flex items-center justify-center bg-slate-50">
+    <main className="min-h-screen relative overflow-hidden flex items-center justify-center bg-background">
       {/* 动态背景层 */}
       <div className="absolute inset-0 z-0 opacity-60">
-        <div className="absolute top-0 -left-40 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
-        <div className="absolute top-0 -right-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-40 left-20 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
+        <div className="absolute top-0 -left-40 w-96 h-96 bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
+        <div className="absolute top-0 -right-40 w-96 h-96 bg-teal-100 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-40 left-20 w-96 h-96 bg-lime-100 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
       </div>
 
       <div className="relative z-10 w-full max-w-4xl px-4">
         <div className="flex flex-col items-center text-center mb-12 animate-fade-in-up">
-          <h1 className="text-6xl md:text-7xl font-black tracking-tight text-slate-900 mb-6 drop-shadow-sm">
-            神笔<span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 animate-gradient-x">PPT</span>
+          <h1 className="text-6xl md:text-7xl font-black tracking-tight text-foreground mb-6 drop-shadow-sm">
+            神笔<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-lime-500 animate-gradient-x">PPT</span>
           </h1>
-          <p className="text-xl text-slate-600 max-w-2xl leading-relaxed">
+          <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">
             让创意在指尖流淌，一键生成专业级演示文稿。
           </p>
         </div>
@@ -48,17 +48,17 @@ export default function Home() {
             
             {/* 输入区域 */}
             <div className="space-y-3">
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />
+              <label className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 创意主题
               </label>
               <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-200 to-blue-200 rounded-xl opacity-50 group-hover:opacity-100 transition duration-500 blur"></div>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-200 to-teal-200 rounded-xl opacity-50 group-hover:opacity-100 transition duration-500 blur"></div>
                 <Textarea
                   placeholder="描述你的 PPT 主题，越详细越好..."
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  className="relative min-h-[140px] bg-white border-slate-200 text-lg text-slate-900 placeholder:text-slate-400 focus:border-purple-500 focus:ring-purple-500/20 rounded-xl resize-none p-6 shadow-sm"
+                  className="relative min-h-[140px] bg-white border-slate-200 text-lg text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-emerald-500/20 rounded-xl resize-none p-6 shadow-sm"
                 />
               </div>
               
@@ -68,7 +68,7 @@ export default function Home() {
                   <button
                     key={tag}
                     onClick={() => setTopic(tag)}
-                    className="px-4 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 hover:border-purple-300 rounded-full transition-all hover:text-purple-600 hover:scale-105 shadow-sm"
+                    className="px-4 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 rounded-full transition-all hover:text-emerald-700 hover:scale-105 shadow-sm"
                   >
                     {tag}
                   </button>
@@ -78,8 +78,8 @@ export default function Home() {
 
             {/* 页数选择 */}
             <div className="space-y-3">
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+              <label className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
                 幻灯片页数
               </label>
               <div className="flex items-center gap-4">
@@ -92,7 +92,7 @@ export default function Home() {
                     const val = parseInt(e.target.value);
                     if (!isNaN(val)) setPageCount(Math.min(20, Math.max(3, val)));
                   }}
-                  className="w-32 bg-white border-slate-200 text-lg font-bold text-center h-12 rounded-xl"
+                  className="w-32 bg-white border-slate-200 text-lg font-bold text-center h-12 rounded-xl focus:border-emerald-500 focus:ring-emerald-500/20"
                 />
                 <span className="text-slate-500 text-sm">页 (3-20)</span>
               </div>
@@ -102,7 +102,7 @@ export default function Home() {
             <Button
               onClick={handleGenerate}
               disabled={!topic.trim() || isLoading}
-              className="w-full h-16 text-xl font-bold text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 border-0 rounded-2xl shadow-lg shadow-purple-200/50 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+              className="w-full h-16 text-xl font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 border-0 rounded-2xl shadow-lg shadow-emerald-200/50 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
             >
               {isLoading ? (
                 <div className="flex items-center gap-3">
@@ -115,7 +115,7 @@ export default function Home() {
                   <svg className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
               )}
             </Button>

@@ -394,24 +394,24 @@ export default function GeneratePage() {
 
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
           {status === "done" ? (
-            <span className="px-3 py-1 rounded-full bg-green-50 text-green-600 text-xs font-medium border border-green-200 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium border border-emerald-200 flex items-center gap-1.5 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               生成完成
             </span>
           ) : status === "error" ? (
-            <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-medium border border-red-200">
+            <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-medium border border-red-200 shadow-sm">
               生成中断
             </span>
           ) : (
-            <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-medium border border-blue-200 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            <span className="px-3 py-1 rounded-full bg-teal-50 text-teal-700 text-xs font-medium border border-teal-200 flex items-center gap-1.5 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
               AI 思考中
             </span>
           )}
         </div>
 
         {/* 计时器 */}
-        <div className="font-mono text-sm bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 text-purple-600 font-medium">
+        <div className="font-mono text-sm bg-white/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-200 text-emerald-700 font-medium shadow-sm">
           ⏱ {formatTime(elapsedTime)}
         </div>
       </header>
@@ -432,9 +432,9 @@ export default function GeneratePage() {
               <span>Progress</span>
               <span>{Math.round(progress)}%</span>
             </div>
-            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-slate-200/60 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 rounded-full transition-all duration-500 animate-shimmer"
+                className="h-full bg-gradient-to-r from-teal-400 via-emerald-500 to-teal-400 rounded-full transition-all duration-500 animate-shimmer"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -482,11 +482,11 @@ export default function GeneratePage() {
         {/* 底部浮动操作栏 */}
         {status === "done" && (
           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 animate-fade-in-up">
-            <div className="bg-white/90 backdrop-blur-xl border border-slate-200 p-2 rounded-2xl shadow-xl flex items-center gap-2">
+            <div className="bg-white/90 backdrop-blur-xl border border-emerald-100 p-2 rounded-2xl shadow-xl shadow-emerald-100/50 flex items-center gap-2">
               <Button
                 onClick={exportPptx}
                 disabled={isExporting}
-                className="h-12 px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 disabled:cursor-wait"
+                className="h-12 px-8 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 disabled:opacity-70 disabled:hover:scale-100 disabled:cursor-wait"
               >
                 {isExporting ? (
                   <>
