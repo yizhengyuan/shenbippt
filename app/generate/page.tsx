@@ -62,6 +62,27 @@ export default function GeneratePage() {
   // 延迟函数
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+  // 将远程图片 URL 转换为 base64（预下载，加速导出）
+  const urlToBase64 = async (url: string): Promise<string> => {
+    try {
+      // 如果已经是 base64，直接返回
+      if (url.startsWith("data:")) return url;
+      
+      const response = await fetch(url);
+      const blob = await response.blob();
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error("Failed to convert image to base64:", error);
+      return url; // 失败时返回原 URL
+    }
+  };
+
   // 生成大纲（同时返回统一风格主题）
   const generateOutlineWithTheme = useCallback(async (): Promise<{ slides: SlideOutline[]; styleTheme: StyleTheme }> => {
     const response = await fetch("/api/outline", {
@@ -78,7 +99,7 @@ export default function GeneratePage() {
     return { slides: data.slides, styleTheme: data.styleTheme };
   }, [topic, pageCount]);
 
-  // 生成单张图片（带重试，传递统一风格）
+  // 生成单张图片（带重试，传递统一风格，自动转 base64）
   const generateImage = async (prompt: string, styleTheme?: StyleTheme, retries = 3): Promise<string> => {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
@@ -99,7 +120,11 @@ export default function GeneratePage() {
         }
 
         const data = await response.json();
-        return data.imageUrl;
+        const imageUrl = data.imageUrl;
+        
+        // 立即将远程 URL 转换为 base64，加速后续导出
+        const base64Image = await urlToBase64(imageUrl);
+        return base64Image;
       } catch (err) {
         if (attempt === retries - 1) throw err;
         await delay(2000 * (attempt + 1));
