@@ -276,9 +276,6 @@ export default function GeneratePage() {
       pptx.defineLayout({ name: "LAYOUT_16x9", width: 10, height: 5.625 });
       pptx.layout = "LAYOUT_16x9";
 
-      // 文字阴影配置
-      const textShadow = { type: "outer" as const, color: "000000", blur: 3, offset: 1, angle: 45 };
-
       for (const slideData of slides) {
         const slide = pptx.addSlide();
         const isFirstSlide = slideData.pageNumber === 1;
@@ -296,61 +293,63 @@ export default function GeneratePage() {
         // 半透明遮罩层
         slide.addShape("rect", {
           x: 0, y: 0, w: "100%", h: "100%",
-          fill: { color: "000000", transparency: 35 },
+          fill: { color: "000000", transparency: 40 },
         });
 
         if (isFirstSlide || isLastSlide) {
-          // 封面/结尾页
-          slide.addText(slideData.title, {
-            x: 0.5, y: 1.8, w: 9, h: 1.2,
-            fontSize: 44, fontFace: "Microsoft YaHei", color: "FFFFFF",
-            bold: true, align: "center", valign: "middle", shadow: textShadow,
+          // 封面/结尾页 - 使用简化配置
+          slide.addText(slideData.title || "", {
+            x: 0.5, y: 1.5, w: 9, h: 1.5,
+            fontSize: 40, fontFace: "Arial", color: "FFFFFF",
+            bold: true, align: "center", valign: "middle",
           });
           if (slideData.subtitle) {
             slide.addText(slideData.subtitle, {
-              x: 0.5, y: 3.0, w: 9, h: 0.8,
-              fontSize: 24, fontFace: "Microsoft YaHei", color: "E0E0E0",
-              align: "center", valign: "middle", shadow: textShadow,
+              x: 0.5, y: 3.2, w: 9, h: 0.8,
+              fontSize: 22, fontFace: "Arial", color: "DDDDDD",
+              align: "center", valign: "middle",
             });
           }
           if (slideData.content && !isLastSlide) {
             slide.addText(slideData.content, {
-              x: 1, y: 4.0, w: 8, h: 1,
-              fontSize: 16, fontFace: "Microsoft YaHei", color: "CCCCCC",
-              align: "center", valign: "top", shadow: textShadow,
+              x: 1, y: 4.2, w: 8, h: 1,
+              fontSize: 14, fontFace: "Arial", color: "CCCCCC",
+              align: "center", valign: "top",
             });
           }
         } else {
           // 内容页
-          slide.addText(slideData.title, {
+          slide.addText(slideData.title || "", {
             x: 0.5, y: 0.3, w: 9, h: 0.8,
-            fontSize: 32, fontFace: "Microsoft YaHei", color: "FFFFFF",
-            bold: true, align: "left", valign: "middle", shadow: textShadow,
+            fontSize: 28, fontFace: "Arial", color: "FFFFFF",
+            bold: true, align: "left", valign: "middle",
           });
           if (slideData.subtitle) {
             slide.addText(slideData.subtitle, {
               x: 0.5, y: 1.0, w: 9, h: 0.5,
-              fontSize: 18, fontFace: "Microsoft YaHei", color: "E0E0E0",
-              align: "left", valign: "middle", shadow: textShadow,
+              fontSize: 16, fontFace: "Arial", color: "DDDDDD",
+              align: "left", valign: "middle",
             });
           }
           const contentY = slideData.subtitle ? 1.6 : 1.2;
-          slide.addText(slideData.content, {
-            x: 0.5, y: contentY, w: 9, h: 1.0,
-            fontSize: 14, fontFace: "Microsoft YaHei", color: "DDDDDD",
-            align: "left", valign: "top", shadow: textShadow,
-          });
+          if (slideData.content) {
+            slide.addText(slideData.content, {
+              x: 0.5, y: contentY, w: 9, h: 1.0,
+              fontSize: 12, fontFace: "Arial", color: "CCCCCC",
+              align: "left", valign: "top",
+            });
+          }
           if (slideData.bulletPoints && slideData.bulletPoints.length > 0) {
             const bulletTexts = slideData.bulletPoints.map(point => ({
               text: point,
               options: { 
-                bullet: { type: "bullet" as const, code: "25CF" },
-                fontSize: 16, color: "FFFFFF", fontFace: "Microsoft YaHei", shadow: textShadow,
+                bullet: { type: "bullet" as const },
+                fontSize: 14, color: "FFFFFF", fontFace: "Arial",
               }
             }));
             slide.addText(bulletTexts, {
-              x: 0.5, y: contentY + 1.1, w: 9, h: 3.0,
-              valign: "top", paraSpaceAfter: 8,
+              x: 0.5, y: contentY + 1.0, w: 9, h: 3.0,
+              valign: "top", paraSpaceAfter: 6,
             });
           }
         }
@@ -358,8 +357,8 @@ export default function GeneratePage() {
         // 页码
         slide.addText(`${slideData.pageNumber}`, {
           x: 9, y: 5.1, w: 0.5, h: 0.4,
-          fontSize: 12, fontFace: "Arial", color: "AAAAAA",
-          align: "right", shadow: textShadow,
+          fontSize: 10, fontFace: "Arial", color: "999999",
+          align: "right",
         });
       }
 
