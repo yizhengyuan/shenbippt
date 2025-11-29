@@ -290,12 +290,11 @@ export default function GeneratePage() {
           }
         }
 
-        // 半透明遮罩层 - 提高透明度以避免图片过暗
-        // transparency: 70 表示 30% 不透明度的黑色
-        slide.addShape("rect", {
-          x: 0, y: 0, w: "100%", h: "100%",
-          fill: { color: "000000", transparency: 70 },
-        });
+        // 移除全局遮罩层，还原图片本色
+        // slide.addShape("rect", { ... });
+
+        // 文字背景配置 (半透明黑底)
+        const textBg = { color: "000000", transparency: 50 };
 
         if (isFirstSlide || isLastSlide) {
           // 封面/结尾页 - 使用简化配置
@@ -303,12 +302,14 @@ export default function GeneratePage() {
             x: 0.5, y: 1.5, w: 9, h: 1.5,
             fontSize: 40, fontFace: "Arial", color: "FFFFFF",
             bold: true, align: "center", valign: "middle",
+            fill: textBg, // 添加背景
           });
           if (slideData.subtitle) {
             slide.addText(slideData.subtitle, {
-              x: 0.5, y: 3.2, w: 9, h: 0.8,
+              x: 2.0, y: 3.2, w: 6, h: 0.8,
               fontSize: 22, fontFace: "Arial", color: "DDDDDD",
               align: "center", valign: "middle",
+              fill: textBg, // 添加背景
             });
           }
           if (slideData.content && !isLastSlide) {
@@ -316,6 +317,7 @@ export default function GeneratePage() {
               x: 1, y: 4.2, w: 8, h: 1,
               fontSize: 14, fontFace: "Arial", color: "CCCCCC",
               align: "center", valign: "top",
+              fill: textBg, // 添加背景
             });
           }
         } else {
@@ -324,19 +326,29 @@ export default function GeneratePage() {
             x: 0.5, y: 0.3, w: 9, h: 0.8,
             fontSize: 28, fontFace: "Arial", color: "FFFFFF",
             bold: true, align: "left", valign: "middle",
+            fill: textBg, // 添加背景
           });
+          
+          // 内容区域背景
+          const contentBgY = 1.0;
+          const contentBgH = 4.0;
+          slide.addShape("rect", {
+            x: 0.5, y: contentBgY, w: 9, h: contentBgH,
+            fill: { color: "000000", transparency: 60 }, // 内容区统一背景
+          });
+
           if (slideData.subtitle) {
             slide.addText(slideData.subtitle, {
-              x: 0.5, y: 1.0, w: 9, h: 0.5,
-              fontSize: 16, fontFace: "Arial", color: "DDDDDD",
+              x: 0.6, y: 1.1, w: 8.8, h: 0.5,
+              fontSize: 16, fontFace: "Arial", color: "E0E0E0",
               align: "left", valign: "middle",
             });
           }
-          const contentY = slideData.subtitle ? 1.6 : 1.2;
+          const contentY = slideData.subtitle ? 1.7 : 1.2;
           if (slideData.content) {
             slide.addText(slideData.content, {
-              x: 0.5, y: contentY, w: 9, h: 1.0,
-              fontSize: 12, fontFace: "Arial", color: "CCCCCC",
+              x: 0.6, y: contentY, w: 8.8, h: 1.0,
+              fontSize: 14, fontFace: "Arial", color: "FFFFFF",
               align: "left", valign: "top",
             });
           }
@@ -349,7 +361,7 @@ export default function GeneratePage() {
               }
             }));
             slide.addText(bulletTexts, {
-              x: 0.5, y: contentY + 1.0, w: 9, h: 3.0,
+              x: 0.6, y: contentY + 1.0, w: 8.8, h: 2.5,
               valign: "top", paraSpaceAfter: 6,
             });
           }

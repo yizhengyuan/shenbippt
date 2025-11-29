@@ -69,10 +69,17 @@ export async function generateOutline(
 
 每页必须包含：title、subtitle、content(2句话)、bulletPoints(3个要点)、imagePrompt(英文背景描述)。
 
+【关键】imagePrompt 必须根据页面具体内容生成具体的画面描述，不要总是抽象几何！
+例如：
+- 历史主题 -> 复古风格，具体的历史场景，旧照片质感
+- 科技主题 -> 未来感，具体的科技设备，赛博朋克风格
+- 自然主题 -> 具体的风景照片，森林，海洋，天空
+- 商业主题 -> 办公室场景，握手，会议，极简商务风
+
 确定一个统一视觉风格(styleTheme)，所有imagePrompt必须包含相同的colorTone和style。
 
 返回JSON格式（slides数组必须有${pageCount}个元素）：
-{"styleTheme":{"name":"风格名","colorTone":"blue gradient","style":"minimalist","mood":"professional"},"slides":[{"title":"标题","subtitle":"副标题","content":"内容","bulletPoints":["要点1","要点2","要点3"],"imagePrompt":"[colorTone] [style] abstract background, geometric patterns, no text, 16:9"}]}
+{"styleTheme":{"name":"风格名","colorTone":"warm vintage","style":"photorealistic","mood":"historical"},"slides":[{"title":"...","imagePrompt":"Vintage photograph of 19th century factory, sepia tone, detailed machinery, 16:9"}]}
 
 只返回JSON，不要其他内容。`;
 
@@ -162,9 +169,11 @@ export async function generateImage(
   // 构建简洁的提示词
   const stylePrefix = styleTheme 
     ? `${styleTheme.colorTone}, ${styleTheme.style} style.`
-    : "blue gradient, minimalist style.";
+    : "high quality, professional style.";
   
-  const enhancedPrompt = `Abstract background. ${stylePrefix} ${prompt}. Geometric patterns, soft gradients, no text, no faces, 16:9.`;
+  // 移除 "Abstract background" 和 "Geometric patterns" 这种强限制
+  // 让 prompt 更加自由，只保留必要的质量控制
+  const enhancedPrompt = `${stylePrefix} ${prompt}. No text, no faces, 16:9, high resolution, cinematic lighting.`;
 
   const maxRetries = 5;
   
