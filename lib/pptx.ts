@@ -1,6 +1,12 @@
 import PptxGenJS from "pptxgenjs";
 import { Slide } from "@/types";
 
+// 透明文本框样式（无背景、无边框）
+const transparentTextBox = {
+  fill: { type: "none" as const },
+  line: { color: "FFFFFF", transparency: 100, width: 0 },
+};
+
 export async function createPptx(slides: Slide[], title: string): Promise<Buffer> {
   const pptx = new PptxGenJS();
 
@@ -57,6 +63,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         bold: true,
         align: "center",
         valign: "middle",
+        ...transparentTextBox,
       });
 
       // 副标题
@@ -71,6 +78,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           color: "E0E0E0",
           align: "center",
           valign: "middle",
+          ...transparentTextBox,
         });
       }
 
@@ -86,6 +94,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           color: "CCCCCC",
           align: "center",
           valign: "top",
+          ...transparentTextBox,
         });
       }
     } else {
@@ -102,6 +111,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         bold: true,
         align: "left",
         valign: "middle",
+        ...transparentTextBox,
       });
 
       // 副标题
@@ -116,6 +126,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           color: "E0E0E0",
           align: "left",
           valign: "middle",
+          ...transparentTextBox,
         });
       }
 
@@ -131,6 +142,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         color: "DDDDDD",
         align: "left",
         valign: "top",
+        ...transparentTextBox,
       });
 
       // 要点列表 - 使用 bullet points
@@ -153,6 +165,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           h: 3.0,
           valign: "top",
           paraSpaceAfter: 8,
+          ...transparentTextBox,
         });
       }
     }
@@ -167,6 +180,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
       fontFace: "Arial",
       color: "AAAAAA",
       align: "right",
+      ...transparentTextBox,
     });
   }
 
@@ -174,4 +188,5 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
   const buffer = await pptx.write({ outputType: "nodebuffer" });
   return buffer as Buffer;
 }
+
 
