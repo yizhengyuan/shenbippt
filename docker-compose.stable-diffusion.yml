@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  stable-diffusion:
+    image: sygil/sygil-webui:latest  # 或使用 AUTOMATIC1111/stable-diffusion-webui
+    container_name: stable-diffusion-api
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./models:/app/stable-diffusion-webui/models
+      - ./outputs:/app/stable-diffusion-webui/outputs
+    environment:
+      - CLI_ARGS=--api --listen --xformers --enable-insecure-extension-access --port 7860
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - sd-network
+
+  # 可选：添加一个简单的 Web UI 界面
+  nginx:
+    image: nginx:alpine
+    container_name: sd-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - stable-diffusion
+    restart: unless-stopped
+    networks:
+      - sd-network
+
+networks:
+  sd-network:
+    driver: bridge

@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import PptxGenJS from "pptxgenjs";
 import { Button } from "@/components/ui/button";
 import { SlideCard } from "@/components/SlideCard";
+import { SlideThumbnail } from "@/components/SlideThumbnail";
 import { Slide, SlideOutline, StyleTheme, TemplateStyle } from "@/types";
 
 // 禁用静态生成，强制使用客户端渲染
@@ -18,6 +19,7 @@ export default function GeneratePage() {
   const [topic, setTopic] = useState("");
   const [pageCount, setPageCount] = useState(5);
   const [slides, setSlides] = useState<Slide[]>([]);
+  const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
   const [status, setStatus] = useState<GenerationStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
@@ -112,7 +114,7 @@ export default function GeneratePage() {
   };
 
   // 生成大纲（同时返回统一风格主题）
-  const generateOutlineWithTheme = useCallback(async (): Promise<{ slides: SlideOutline[]; styleTheme: StyleTheme }> => {
+  const generateOutlineWithTheme = useCallback(async (): Promise<{ slides: SlideOutline[]; styleTheme: StyleTheme; backgroundImage?: string }> => {
     const response = await fetch("/api/outline", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -129,7 +131,7 @@ export default function GeneratePage() {
     }
 
     const data = await response.json();
-    return { slides: data.slides, styleTheme: data.styleTheme };
+    return { slides: data.slides, styleTheme: data.styleTheme, backgroundImage: data.backgroundImage };
   }, [topic, pageCount, templateStyle]);
 
   // 生成单张图片（带重试，传递统一风格，自动转 base64）
@@ -182,12 +184,23 @@ export default function GeneratePage() {
     setElapsedTime(0);
 
     try {
-      // 1. 生成大纲（包含统一风格主题）
-      const { slides: outlines, styleTheme } = await generateOutlineWithTheme();
+      // 1. 生成大纲（包含统一风格主题和背景）
+      const { slides: outlines, styleTheme, backgroundImage } = await generateOutlineWithTheme();
       styleThemeRef.current = styleTheme; // 保存风格主题
       setProgress(10);
 
-      // 2. 初始化幻灯片（包含新字段）
+      // 2. 使用统一的背景图片
+      const backgroundPrompt = backgroundImage || outlines[0]?.imagePrompt || "Clean professional presentation background";
+      let backgroundImageUrl = "";
+
+      // 只生成一次背景图片
+      try {
+        backgroundImageUrl = await generateImage(backgroundPrompt, styleTheme);
+      } catch (err) {
+        console.error("Failed to generate background image:", err);
+      }
+
+      // 3. 初始化幻灯片，所有页面使用相同的背景
       const initialSlides: Slide[] = outlines.map((outline, index) => ({
         id: uuidv4(),
         pageNumber: index + 1,
@@ -195,56 +208,15 @@ export default function GeneratePage() {
         subtitle: outline.subtitle,
         content: outline.content,
         bulletPoints: outline.bulletPoints,
-        imageUrl: "",
-        imagePrompt: outline.imagePrompt,
+        imageUrl: backgroundImageUrl, // 使用统一的背景图片
+        imagePrompt: backgroundPrompt, // 保存背景提示词
       }));
       setSlides(initialSlides);
       setStatus("images");
 
-      // 3. 并发生成图片（控制并发数为 2，使用统一风格）
-      const concurrency = 2;
-      const totalSlides = initialSlides.length;
-      let completedCount = 0;
-
-      // 任务队列
-      const queue = initialSlides.map((slide, index) => ({ slide, index }));
-
-      const processQueue = async () => {
-        while (queue.length > 0) {
-          const item = queue.shift();
-          if (!item) break;
-
-          const { slide, index } = item;
-
-          try {
-            // 添加随机延迟，避免完全同时请求
-            await delay(Math.random() * 1000 + 500);
-
-            // 传递统一风格主题给图片生成
-            const imageUrl = await generateImage(slide.imagePrompt, styleTheme);
-            setSlides((prev) =>
-              prev.map((s, idx) =>
-                idx === index ? { ...s, imageUrl } : s
-              )
-            );
-          } catch (err) {
-            console.error(`Failed to generate image for slide ${index + 1}:`, err);
-          } finally {
-            completedCount++;
-            setProgress(10 + (completedCount / totalSlides) * 90);
-          }
-        }
-      };
-
-      // 启动并发任务
-      const workers = Array(Math.min(concurrency, totalSlides))
-        .fill(null)
-        .map(() => processQueue());
-
-      await Promise.all(workers);
-
-      setStatus("done");
+      // 更新进度到100%（不需要单独生成每页图片）
       setProgress(100);
+      setStatus("done");
     } catch (err) {
       console.error("Generation error:", err);
       setStatus("error");
@@ -315,76 +287,85 @@ export default function GeneratePage() {
         // 移除全局遮罩层，还原图片本色
         // slide.addShape("rect", { ... });
 
-        // 文字背景配置 (半透明黑底)
-        const textBg = { color: "000000", transparency: 50 };
+        // 所有文字默认使用纯黑色，所有标题加粗
+        const blackColor = "000000"; // 纯黑色
 
         if (isFirstSlide || isLastSlide) {
-          // 封面/结尾页 - 使用简化配置
+          // 封面/结尾页
           slide.addText(slideData.title || "", {
             x: 0.5, y: 1.5, w: 9, h: 1.5,
-            fontSize: 40, fontFace: "Arial", color: "FFFFFF",
-            bold: true, align: "center", valign: "middle",
-            fill: textBg, // 添加背景
+            fontSize: 40, fontFace: "Arial",
+            color: blackColor, // 纯黑色
+            bold: true, // 标题加粗
+            align: "center", valign: "middle",
           });
           if (slideData.subtitle) {
             slide.addText(slideData.subtitle, {
               x: 2.0, y: 3.2, w: 6, h: 0.8,
-              fontSize: 22, fontFace: "Arial", color: "DDDDDD",
+              fontSize: 22, fontFace: "Arial",
+              color: blackColor, // 纯黑色
+              bold: true, // 副标题也加粗
               align: "center", valign: "middle",
-              fill: textBg, // 添加背景
             });
           }
-          if (slideData.content && !isLastSlide) {
-            slide.addText(slideData.content, {
-              x: 1, y: 4.2, w: 8, h: 1,
-              fontSize: 14, fontFace: "Arial", color: "CCCCCC",
-              align: "center", valign: "top",
-              fill: textBg, // 添加背景
-            });
-          }
+          // 首页不显示content内容，保持简洁
+          // 此处为首页（isFirstSlide为true），所以不需要显示content
         } else {
           // 内容页
           slide.addText(slideData.title || "", {
             x: 0.5, y: 0.3, w: 9, h: 0.8,
-            fontSize: 28, fontFace: "Arial", color: "FFFFFF",
-            bold: true, align: "left", valign: "middle",
-            fill: textBg, // 添加背景
-          });
-
-          // 内容区域背景
-          const contentBgY = 1.0;
-          const contentBgH = 4.0;
-          slide.addShape("rect", {
-            x: 0.5, y: contentBgY, w: 9, h: contentBgH,
-            fill: { color: "000000", transparency: 60 }, // 内容区统一背景
+            fontSize: 28, fontFace: "Arial",
+            color: blackColor, // 纯黑色
+            bold: true, // 标题加粗
+            align: "left", valign: "middle",
           });
 
           if (slideData.subtitle) {
             slide.addText(slideData.subtitle, {
-              x: 0.6, y: 1.1, w: 8.8, h: 0.5,
-              fontSize: 16, fontFace: "Arial", color: "E0E0E0",
+              x: 0.6, y: 0.9, w: 8.8, h: 0.5,
+              fontSize: 16, fontFace: "Arial",
+              color: blackColor, // 纯黑色
+              bold: true, // 副标题也加粗
               align: "left", valign: "middle",
             });
           }
-          const contentY = slideData.subtitle ? 1.7 : 1.2;
+          const contentY = slideData.subtitle ? 1.5 : 1.0; // 调整起始位置，让内容更靠上
+          let nextY = contentY;
+
+          // 将内容也转换为项目符号列表（第一级）
           if (slideData.content) {
-            slide.addText(slideData.content, {
-              x: 0.6, y: contentY, w: 8.8, h: 1.0,
-              fontSize: 14, fontFace: "Arial", color: "FFFFFF",
-              align: "left", valign: "top",
-            });
+            const contentLines = slideData.content.split(/[。\n]/).filter(line => line.trim());
+            if (contentLines.length > 0) {
+              // 第一级内容使用简化的文本格式，确保对齐
+              const contentText = contentLines.map(line => `• ${line.trim()}`).join('\n');
+              slide.addText(contentText, {
+                x: 0.8, y: nextY, w: 8.4, h: 2.5,
+                fontSize: 14,
+                color: blackColor,
+                fontFace: "Arial",
+                align: "left",
+                valign: "top",
+                paraSpaceBefore: 8,
+                paraSpaceAfter: 4,
+                lineSpacing: 1.2,
+              });
+              nextY += 2.8;
+            }
           }
+
+          // bulletPoints 作为二级内容，使用缩进
           if (slideData.bulletPoints && slideData.bulletPoints.length > 0) {
-            const bulletTexts = slideData.bulletPoints.map(point => ({
-              text: point,
-              options: {
-                bullet: { type: "bullet" as const },
-                fontSize: 14, color: "FFFFFF", fontFace: "Arial",
-              }
-            }));
-            slide.addText(bulletTexts, {
-              x: 0.6, y: contentY + 1.0, w: 8.8, h: 2.5,
-              valign: "top", paraSpaceAfter: 6,
+            const bulletText = slideData.bulletPoints.map(point => `  ◦ ${point}`).join('\n'); // 使用双空格+小圆点实现缩进
+            slide.addText(bulletText, {
+              x: 0.8, y: nextY, w: 8.4, h: 2.5,
+              fontSize: 13, // 二级内容字体稍小
+              color: blackColor,
+              fontFace: "Arial",
+              align: "left",
+              valign: "top",
+              paraSpaceBefore: 8,
+              paraSpaceAfter: 4,
+              lineSpacing: 1.2,
             });
           }
         }
@@ -495,22 +476,132 @@ export default function GeneratePage() {
           </div>
         )}
 
-        {/* 网格展示 */}
+        {/* 新布局：左侧缩略图列表 + 右侧预览 */}
         {slides.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-20">
-            {slides.map((slide, index) => (
-              <div
-                key={slide.id}
-                className="animate-fade-in-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <SlideCard
-                  slide={slide}
-                  isRegenerating={regeneratingSlides.has(slide.id)}
-                  onRegenerate={() => regenerateSlide(slide.id)}
-                />
+          <div className="flex gap-6 mb-20 animate-fade-in">
+            {/* 左侧缩略图列表 */}
+            <div className="w-80 flex-shrink-0">
+              <div className="sticky top-24 space-y-3">
+                <h2 className="text-sm font-medium text-slate-600 mb-3">幻灯片列表</h2>
+                <div className="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+                  {slides.map((slide, index) => (
+                    <div
+                      key={slide.id}
+                      className="animate-fade-in-up"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <SlideThumbnail
+                        slide={slide}
+                        isSelected={index === selectedSlideIndex}
+                        isLoading={regeneratingSlides.has(slide.id)}
+                        onClick={() => setSelectedSlideIndex(index)}
+                        onRegenerate={() => regenerateSlide(slide.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* 右侧大预览 */}
+            <div className="flex-1 min-w-0">
+              <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+                {slides[selectedSlideIndex] && (
+                  <div className="aspect-video relative">
+                    {/* 幻灯片图片 */}
+                    {slides[selectedSlideIndex].imageUrl ? (
+                      <img
+                        src={slides[selectedSlideIndex].imageUrl}
+                        alt={`Slide ${slides[selectedSlideIndex].pageNumber}`}
+                        className="w-full h-full object-contain bg-slate-50"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
+                        <div className="text-center">
+                          <svg className="animate-spin h-12 w-12 text-emerald-500 mx-auto mb-4" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          <p className="text-slate-500">正在生成图片...</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 页码 */}
+                    <div className="absolute bottom-4 right-4 bg-black/60 text-white text-sm px-3 py-1.5 rounded-md">
+                      {slides[selectedSlideIndex].pageNumber} / {slides.length}
+                    </div>
+                  </div>
+                )}
+
+                {/* 幻灯片详情 */}
+                <div className="p-6 border-t border-slate-200">
+                  <div className="space-y-4">
+                    {/* 标题 */}
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-900">
+                        {slides[selectedSlideIndex]?.title}
+                      </h3>
+                      {slides[selectedSlideIndex]?.subtitle && (
+                        <p className="text-lg text-slate-600 mt-2">
+                          {slides[selectedSlideIndex].subtitle}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 内容 */}
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-500 mb-2">内容</h4>
+                      <p className="text-slate-700 leading-relaxed">
+                        {slides[selectedSlideIndex]?.content}
+                      </p>
+                    </div>
+
+                    {/* 要点列表 */}
+                    {slides[selectedSlideIndex]?.bulletPoints && slides[selectedSlideIndex].bulletPoints.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-500 mb-2">要点</h4>
+                        <ul className="space-y-2">
+                          {slides[selectedSlideIndex].bulletPoints.map((point, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-slate-700">
+                              <span className="text-emerald-500 mt-0.5">•</span>
+                              <span>{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* 操作按钮 */}
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        onClick={() => regenerateSlide(slides[selectedSlideIndex]?.id || "")}
+                        disabled={regeneratingSlides.has(slides[selectedSlideIndex]?.id || "") || !slides[selectedSlideIndex]?.imageUrl}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {regeneratingSlides.has(slides[selectedSlideIndex]?.id || "") ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            重新生成中...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            重新生成图片
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

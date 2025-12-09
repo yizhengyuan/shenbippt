@@ -33,6 +33,7 @@ export interface OutlineRequest {
 export interface OutlineResponse {
   slides: SlideOutline[];
   styleTheme: StyleTheme;
+  backgroundImage?: string;  // 统一的背景图片描述
 }
 
 export interface ImageRequest {

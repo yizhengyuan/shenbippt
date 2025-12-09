@@ -53,26 +53,30 @@ export default function Home() {
 
       <div className="relative z-10 w-full max-w-4xl px-4 py-8">
         <div className="flex flex-col items-center text-center mb-10 animate-fade-in-up">
-          <div className="mb-6 relative group cursor-default">
-            <h1 className="text-8xl md:text-9xl font-extrabold tracking-tight flex items-center justify-center gap-4 select-none"
-              style={{ fontFamily: 'var(--font-baloo), "YouYuan", cursive' }}>
-              <span className="relative group cursor-default">
-                {/* 阴影层 */}
-                <span className="absolute inset-0 text-slate-300 blur-[2px] transform translate-y-2 select-none" aria-hidden="true">神笔</span>
-                {/* 主体层 */}
-                <span className="relative bg-clip-text text-transparent bg-gradient-to-br from-[#FFD166] to-[#FF9F1C] transition-transform duration-300 group-hover:scale-105 inline-block drop-shadow-sm pb-2">
-                  神笔
-                </span>
-              </span>
-              
-              <span className="relative group cursor-default">
-                <span className="absolute inset-0 text-slate-300 blur-[2px] transform translate-y-2 select-none" aria-hidden="true">PPT</span>
-                <span className="relative bg-clip-text text-transparent bg-gradient-to-br from-[#2EC4B6] to-[#2B9348] transition-transform duration-300 group-hover:scale-105 inline-block drop-shadow-sm pb-2">
-                  PPT
-                </span>
-              </span>
-            </h1>
+          <div className="mb-6 relative w-full flex justify-center">
+            <img
+              src="/shenbippt_title.jpg"
+              alt="神笔PPT - AI PPT生成工具"
+              className="max-w-full h-auto w-full md:w-4/5 lg:w-3/4 xl:w-2/3 select-none"
+              style={{
+                filter: 'brightness(1.08) contrast(1.05) saturate(1.15) hue-rotate(-3deg) sepia(0.1)',
+                mixBlendMode: 'multiply',
+                opacity: 0.98,
+                marginLeft: 'auto',
+                marginRight: 'auto',
+                display: 'block'
+              }}
+            />
+            {/* 背景色匹配叠加层 */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'radial-gradient(ellipse at center, transparent 30%, rgba(255, 251, 245, 0.08) 70%, rgba(255, 251, 245, 0.18) 100%)',
+                mixBlendMode: 'soft-light'
+              }}
+            />
           </div>
+
           <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">
             让创意在指尖流淌，一键生成专业级演示文稿。
           </p>
