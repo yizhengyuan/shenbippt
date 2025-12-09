@@ -1,22 +1,13 @@
 import PptxGenJS from "pptxgenjs";
 import { Slide } from "@/types";
 
-// 文字阴影效果配置
-const textShadow = {
-  type: "outer" as const,
-  color: "000000",
-  blur: 3,
-  offset: 1,
-  angle: 45,
-};
-
 export async function createPptx(slides: Slide[], title: string): Promise<Buffer> {
   const pptx = new PptxGenJS();
-  
+
   pptx.title = title;
   pptx.author = "神笔PPT";
   pptx.subject = title;
-  
+
   // 设置幻灯片尺寸为 16:9
   pptx.defineLayout({ name: "LAYOUT_16x9", width: 10, height: 5.625 });
   pptx.layout = "LAYOUT_16x9";
@@ -25,7 +16,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
     const slide = pptx.addSlide();
     const isFirstSlide = slideData.pageNumber === 1;
     const isLastSlide = slideData.pageNumber === slides.length;
-    
+
     // 添加背景图片（只使用 base64，确保可靠性）
     if (slideData.imageUrl && slideData.imageUrl.startsWith("data:")) {
       try {
@@ -66,7 +57,6 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         bold: true,
         align: "center",
         valign: "middle",
-        shadow: textShadow,
       });
 
       // 副标题
@@ -81,7 +71,6 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           color: "E0E0E0",
           align: "center",
           valign: "middle",
-          shadow: textShadow,
         });
       }
 
@@ -97,7 +86,6 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           color: "CCCCCC",
           align: "center",
           valign: "top",
-          shadow: textShadow,
         });
       }
     } else {
@@ -114,7 +102,6 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         bold: true,
         align: "left",
         valign: "middle",
-        shadow: textShadow,
       });
 
       // 副标题
@@ -129,7 +116,6 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           color: "E0E0E0",
           align: "left",
           valign: "middle",
-          shadow: textShadow,
         });
       }
 
@@ -145,7 +131,6 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         color: "DDDDDD",
         align: "left",
         valign: "top",
-        shadow: textShadow,
       });
 
       // 要点列表 - 使用 bullet points
@@ -153,12 +138,11 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         const bulletY = contentY + 1.1;
         const bulletTexts = slideData.bulletPoints.map(point => ({
           text: point,
-          options: { 
+          options: {
             bullet: { type: "bullet" as const, code: "25CF" }, // 实心圆点
             fontSize: 16,
             color: "FFFFFF",
             fontFace: "Microsoft YaHei",
-            shadow: textShadow,
           }
         }));
 
@@ -183,7 +167,6 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
       fontFace: "Arial",
       color: "AAAAAA",
       align: "right",
-      shadow: textShadow,
     });
   }
 
