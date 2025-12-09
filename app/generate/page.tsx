@@ -388,10 +388,11 @@ export default function GeneratePage() {
             currentY += 0.7;
           }
 
-          // 分隔线
+          // 分隔线 - 使用更淡的颜色
+          const dashColor = primary + "20"; // 20% 透明度
           slide.addShape(pptx.ShapeType.line, {
             x: 0.7, y: currentY, w: 8.6, h: 0,
-            line: { color: primary + "40", width: 1, dashType: "dash" },
+            line: { color: dashColor, width: 1, dashType: "dash" },
           });
           currentY += 0.3;
 
@@ -467,10 +468,10 @@ export default function GeneratePage() {
             });
           }
 
-          // 底部装饰
+          // 底部装饰 - 使用更淡的颜色
           slide.addShape(pptx.ShapeType.line, {
             x: 1, y: 5.2, w: 8, h: 0,
-            line: { color: primary + "20", width: 1 },
+            line: { color: dashColor, width: 1 },
           });
         }
 
