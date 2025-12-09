@@ -1,4 +1,5 @@
 import PptxGenJS from "pptxgenjs";
+import sharp from "sharp";
 import { Slide } from "@/types";
 
 // 透明文本框样式（无背景、无边框）
@@ -6,6 +7,57 @@ const transparentTextBox = {
   fill: { type: "none" as const },
   line: { color: "FFFFFF", transparency: 100, width: 0 },
 };
+
+// 深色主题文字颜色（用于亮色背景）
+const darkThemeColors = {
+  title: "1A1A1A",       // 近黑色
+  subtitle: "333333",    // 深灰
+  content: "444444",     // 中灰
+  bullet: "1A1A1A",      // 近黑色
+  pageNum: "666666",     // 灰色
+};
+
+// 浅色主题文字颜色（用于暗色背景）
+const lightThemeColors = {
+  title: "FFFFFF",       // 纯白
+  subtitle: "E0E0E0",    // 浅灰白
+  content: "DDDDDD",     // 更浅灰
+  bullet: "FFFFFF",      // 纯白
+  pageNum: "AAAAAA",     // 灰色
+};
+
+/**
+ * 分析图片亮度，判断是否为亮色图片
+ * @param base64Image base64 编码的图片（包含 data:image/xxx;base64, 前缀）
+ * @returns true 如果图片整体偏亮，false 如果整体偏暗
+ */
+async function isImageBright(base64Image: string): Promise<boolean> {
+  try {
+    // 提取 base64 数据部分
+    const base64Data = base64Image.includes(",")
+      ? base64Image.split(",")[1]
+      : base64Image;
+
+    const imageBuffer = Buffer.from(base64Data, "base64");
+
+    // 使用 sharp 获取图片统计信息
+    const stats = await sharp(imageBuffer)
+      .resize(100, 100, { fit: "cover" }) // 缩小以加快处理
+      .greyscale() // 转为灰度
+      .stats();
+
+    // 计算平均亮度（0-255）
+    const avgBrightness = stats.channels[0].mean;
+
+    // 阈值：128 为中间值，可调整
+    // 考虑到大多数图片上半部分（标题区域）可能更亮，稍微降低阈值
+    return avgBrightness > 120;
+  } catch (error) {
+    console.error("Failed to analyze image brightness:", error);
+    // 默认假设暗色背景，使用浅色文字
+    return false;
+  }
+}
 
 export async function createPptx(slides: Slide[], title: string): Promise<Buffer> {
   const pptx = new PptxGenJS();
@@ -22,6 +74,13 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
     const slide = pptx.addSlide();
     const isFirstSlide = slideData.pageNumber === 1;
     const isLastSlide = slideData.pageNumber === slides.length;
+
+    // 分析背景图片亮度，决定使用深色还是浅色文字
+    let colors = lightThemeColors; // 默认浅色文字
+    if (slideData.imageUrl && slideData.imageUrl.startsWith("data:")) {
+      const isBright = await isImageBright(slideData.imageUrl);
+      colors = isBright ? darkThemeColors : lightThemeColors;
+    }
 
     // 添加背景图片（只使用 base64，确保可靠性）
     if (slideData.imageUrl && slideData.imageUrl.startsWith("data:")) {
@@ -49,7 +108,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         h: 1.2,
         fontSize: 44,
         fontFace: "Microsoft YaHei",
-        color: "FFFFFF",
+        color: colors.title,
         bold: true,
         align: "center",
         valign: "middle",
@@ -65,7 +124,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           h: 0.8,
           fontSize: 24,
           fontFace: "Microsoft YaHei",
-          color: "E0E0E0",
+          color: colors.subtitle,
           align: "center",
           valign: "middle",
           ...transparentTextBox,
@@ -81,7 +140,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           h: 1,
           fontSize: 16,
           fontFace: "Microsoft YaHei",
-          color: "CCCCCC",
+          color: colors.content,
           align: "center",
           valign: "top",
           ...transparentTextBox,
@@ -97,7 +156,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         h: 0.8,
         fontSize: 32,
         fontFace: "Microsoft YaHei",
-        color: "FFFFFF",
+        color: colors.title,
         bold: true,
         align: "left",
         valign: "middle",
@@ -113,7 +172,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           h: 0.5,
           fontSize: 18,
           fontFace: "Microsoft YaHei",
-          color: "E0E0E0",
+          color: colors.subtitle,
           align: "left",
           valign: "middle",
           ...transparentTextBox,
@@ -129,7 +188,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
         h: 1.0,
         fontSize: 14,
         fontFace: "Microsoft YaHei",
-        color: "DDDDDD",
+        color: colors.content,
         align: "left",
         valign: "top",
         ...transparentTextBox,
@@ -143,7 +202,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
           options: {
             bullet: { type: "bullet" as const, code: "25CF" }, // 实心圆点
             fontSize: 16,
-            color: "FFFFFF",
+            color: colors.bullet,
             fontFace: "Microsoft YaHei",
           }
         }));
@@ -168,7 +227,7 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
       h: 0.4,
       fontSize: 12,
       fontFace: "Arial",
-      color: "AAAAAA",
+      color: colors.pageNum,
       align: "right",
       ...transparentTextBox,
     });
@@ -178,5 +237,6 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
   const buffer = await pptx.write({ outputType: "nodebuffer" });
   return buffer as Buffer;
 }
+
 
 
