@@ -287,87 +287,184 @@ export default function GeneratePage() {
         // 移除全局遮罩层，还原图片本色
         // slide.addShape("rect", { ... });
 
-        // 所有文字默认使用纯黑色，所有标题加粗
+        // 颜色定义
         const blackColor = "000000"; // 纯黑色
+        const primaryColor = templateStyle?.primaryColor ? templateStyle.primaryColor.replace("#", "") : "2563EB"; // 主色
+        const secondaryColor = templateStyle?.secondaryColor ? templateStyle.secondaryColor.replace("#", "") : "64748B"; // 辅助色
+
+        // 确保颜色值是有效的6位十六进制
+        const formatColor = (color: string) => {
+          const cleanColor = color.replace("#", "");
+          return cleanColor.length === 3 ? cleanColor.split("").map(c => c + c).join("") : cleanColor;
+        };
+
+        const primary = formatColor(primaryColor);
+        const secondary = formatColor(secondaryColor);
 
         if (isFirstSlide || isLastSlide) {
-          // 封面/结尾页
+          // 封面/结尾页 - 更现代的布局
+          // 主标题
           slide.addText(slideData.title || "", {
-            x: 0.5, y: 1.5, w: 9, h: 1.5,
-            fontSize: 40, fontFace: "Arial",
-            color: blackColor, // 纯黑色
-            bold: true, // 标题加粗
-            align: "center", valign: "middle",
-          });
-          if (slideData.subtitle) {
-            slide.addText(slideData.subtitle, {
-              x: 2.0, y: 3.2, w: 6, h: 0.8,
-              fontSize: 22, fontFace: "Arial",
-              color: blackColor, // 纯黑色
-              bold: true, // 副标题也加粗
-              align: "center", valign: "middle",
-            });
-          }
-          // 首页不显示content内容，保持简洁
-          // 此处为首页（isFirstSlide为true），所以不需要显示content
-        } else {
-          // 内容页
-          slide.addText(slideData.title || "", {
-            x: 0.5, y: 0.3, w: 9, h: 0.8,
-            fontSize: 28, fontFace: "Arial",
-            color: blackColor, // 纯黑色
-            bold: true, // 标题加粗
-            align: "left", valign: "middle",
+            x: 1, y: 2, w: 8, h: 1.2,
+            fontSize: 44,
+            fontFace: "Arial Black",
+            color: blackColor,
+            bold: true,
+            align: "center",
+            valign: "middle",
           });
 
+          // 副标题（如果存在）
           if (slideData.subtitle) {
             slide.addText(slideData.subtitle, {
-              x: 0.6, y: 0.9, w: 8.8, h: 0.5,
-              fontSize: 16, fontFace: "Arial",
-              color: blackColor, // 纯黑色
-              bold: true, // 副标题也加粗
-              align: "left", valign: "middle",
-            });
-          }
-          const contentY = slideData.subtitle ? 1.5 : 1.0; // 调整起始位置，让内容更靠上
-          let nextY = contentY;
-
-          // 将内容也转换为项目符号列表（第一级）
-          if (slideData.content) {
-            const contentLines = slideData.content.split(/[。\n]/).filter(line => line.trim());
-            if (contentLines.length > 0) {
-              // 第一级内容使用简化的文本格式，确保对齐
-              const contentText = contentLines.map(line => `• ${line.trim()}`).join('\n');
-              slide.addText(contentText, {
-                x: 0.8, y: nextY, w: 8.4, h: 2.5,
-                fontSize: 14,
-                color: blackColor,
-                fontFace: "Arial",
-                align: "left",
-                valign: "top",
-                paraSpaceBefore: 8,
-                paraSpaceAfter: 4,
-                lineSpacing: 1.2,
-              });
-              nextY += 2.8;
-            }
-          }
-
-          // bulletPoints 作为二级内容，使用缩进
-          if (slideData.bulletPoints && slideData.bulletPoints.length > 0) {
-            const bulletText = slideData.bulletPoints.map(point => `  ◦ ${point}`).join('\n'); // 使用双空格+小圆点实现缩进
-            slide.addText(bulletText, {
-              x: 0.8, y: nextY, w: 8.4, h: 2.5,
-              fontSize: 13, // 二级内容字体稍小
-              color: blackColor,
+              x: 1.5, y: 3.4, w: 7, h: 0.6,
+              fontSize: 24,
               fontFace: "Arial",
+              color: secondaryColor,
+              bold: false,
+              align: "center",
+              valign: "middle",
+              italic: true,
+            });
+          }
+
+          // 装饰线
+          slide.addShape(pptx.ShapeType.line, {
+            x: 3.5, y: 4.2, w: 3, h: 0,
+            line: { color: primary, width: 3 },
+          });
+
+          // 内容（仅在结尾页显示）
+          if (isLastSlide && slideData.content) {
+            slide.addText(slideData.content, {
+              x: 1.5, y: 4.6, w: 7, h: 0.8,
+              fontSize: 18,
+              fontFace: "Arial",
+              color: secondary,
+              align: "center",
+              valign: "middle",
+              lineSpacing: 1.4,
+            });
+          }
+        } else {
+          // 内容页 - 优化的专业布局
+
+          // 顶部装饰条
+          slide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 0, w: 10, h: 0.1,
+            fill: { color: primary },
+          });
+
+          // 标题区域 - 使用渐变背景
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: 0.5, y: 0.3, w: 9, h: 0.9,
+            fill: { color: primary + "10" }, // 10% 透明度
+            line: { color: primary, width: 1 },
+          });
+
+          slide.addText(slideData.title || "", {
+            x: 0.7, y: 0.45, w: 8.6, h: 0.6,
+            fontSize: 32,
+            fontFace: "Arial",
+            color: primary,
+            bold: true,
+            align: "left",
+            valign: "middle",
+          });
+
+          // 副标题
+          let currentY = 1.4;
+          if (slideData.subtitle) {
+            slide.addText(slideData.subtitle, {
+              x: 0.7, y: currentY, w: 8.6, h: 0.5,
+              fontSize: 18,
+              fontFace: "Arial",
+              color: secondary,
+              bold: true,
+              align: "left",
+              valign: "middle",
+              italic: true,
+            });
+            currentY += 0.7;
+          }
+
+          // 分隔线
+          slide.addShape(pptx.ShapeType.line, {
+            x: 0.7, y: currentY, w: 8.6, h: 0,
+            line: { color: primary + "40", width: 1, dashType: "dash" },
+          });
+          currentY += 0.3;
+
+          // 内容区域 - 优化显示
+          if (slideData.content) {
+            // 内容框
+            slide.addShape(pptx.ShapeType.roundRect, {
+              x: 0.7, y: currentY, w: 8.6, h: 1.2,
+              fill: { color: "F8FAFC" }, // 浅灰背景
+              line: { color: "E2E8F0", width: 1 },
+            });
+
+            // 处理内容文本
+            const contentText = slideData.content.length > 200
+              ? slideData.content.substring(0, 200) + "..."
+              : slideData.content;
+
+            slide.addText(contentText, {
+              x: 0.9, y: currentY + 0.1, w: 8.2, h: 1,
+              fontSize: 15,
+              fontFace: "Arial",
+              color: blackColor,
               align: "left",
               valign: "top",
-              paraSpaceBefore: 8,
-              paraSpaceAfter: 4,
-              lineSpacing: 1.2,
+              lineSpacing: 1.5,
+              paraSpaceBefore: 5,
+              paraSpaceAfter: 5,
+            });
+            currentY += 1.5;
+          }
+
+          // 要点列表 - 改进的样式
+          if (slideData.bulletPoints && slideData.bulletPoints.length > 0) {
+            // 为每个要点创建卡片式布局
+            const bulletHeight = 0.5;
+            const bulletSpacing = 0.15;
+            const maxBullets = Math.min(slideData.bulletPoints.length, 6);
+
+            slideData.bulletPoints.slice(0, maxBullets).forEach((point, index) => {
+              const yPos = currentY + index * (bulletHeight + bulletSpacing);
+
+              // 背景卡片（交替颜色）
+              const bgColor = index % 2 === 0 ? "F1F5F9" : "FFFFFF";
+              slide.addShape(pptx.ShapeType.roundRect, {
+                x: 0.7, y: yPos, w: 8.6, h: bulletHeight,
+                fill: { color: bgColor },
+                line: { color: "E2E8F0", width: 0.5 },
+              });
+
+              // 自定义项目符号
+              slide.addShape(pptx.ShapeType.ellipse, {
+                x: 0.9, y: yPos + 0.15, w: 0.2, h: 0.2,
+                fill: { color: primary },
+              });
+
+              // 要点文本
+              slide.addText(point, {
+                x: 1.3, y: yPos + 0.05, w: 7.8, h: bulletHeight - 0.1,
+                fontSize: 14,
+                fontFace: "Arial",
+                color: blackColor,
+                align: "left",
+                valign: "middle",
+                lineSpacing: 1.3,
+              });
             });
           }
+
+          // 底部装饰
+          slide.addShape(pptx.ShapeType.line, {
+            x: 1, y: 5.3, w: 8, h: 0,
+            line: { color: primary + "20", width: 1 },
+          });
         }
 
         // 页码
