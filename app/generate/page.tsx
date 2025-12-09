@@ -355,10 +355,10 @@ export default function GeneratePage() {
             fill: { color: primary },
           });
 
-          // 标题区域 - 使用渐变背景
+          // 标题区域
           slide.addShape(pptx.ShapeType.roundRect, {
             x: 0.5, y: 0.3, w: 9, h: 0.9,
-            fill: { color: primary + "10" }, // 10% 透明度
+            fill: { color: primary + "10" },
             line: { color: primary, width: 1 },
           });
 
@@ -395,45 +395,52 @@ export default function GeneratePage() {
           });
           currentY += 0.3;
 
-          // 内容区域 - 优化显示
+          // 计算剩余可用空间（底部留出0.5英寸空间）
+          const availableHeight = 5.0 - currentY;
+          const contentHeight = slideData.content ? 1.2 : 0;
+          const bulletsHeight = availableHeight - contentHeight - 0.3;
+
+          // 内容区域
           if (slideData.content) {
             // 内容框
             slide.addShape(pptx.ShapeType.roundRect, {
-              x: 0.7, y: currentY, w: 8.6, h: 1.2,
-              fill: { color: "F8FAFC" }, // 浅灰背景
+              x: 0.7, y: currentY, w: 8.6, h: contentHeight,
+              fill: { color: "F8FAFC" },
               line: { color: "E2E8F0", width: 1 },
             });
 
             // 处理内容文本
-            const contentText = slideData.content.length > 200
-              ? slideData.content.substring(0, 200) + "..."
+            const contentText = slideData.content.length > 300
+              ? slideData.content.substring(0, 300) + "..."
               : slideData.content;
 
             slide.addText(contentText, {
-              x: 0.9, y: currentY + 0.1, w: 8.2, h: 1,
+              x: 0.9, y: currentY + 0.1, w: 8.2, h: contentHeight - 0.2,
               fontSize: 15,
               fontFace: "Arial",
               color: blackColor,
               align: "left",
               valign: "top",
-              lineSpacing: 1.5,
+              lineSpacing: 1.4,
               paraSpaceBefore: 5,
               paraSpaceAfter: 5,
             });
-            currentY += 1.5;
+            currentY += contentHeight + 0.3;
           }
 
-          // 要点列表 - 改进的样式
+          // 要点列表
           if (slideData.bulletPoints && slideData.bulletPoints.length > 0) {
-            // 为每个要点创建卡片式布局
-            const bulletHeight = 0.5;
-            const bulletSpacing = 0.15;
-            const maxBullets = Math.min(slideData.bulletPoints.length, 6);
+            const maxBullets = Math.min(slideData.bulletPoints.length, 5);
+            const bulletHeight = Math.min((bulletsHeight - (maxBullets - 1) * 0.08) / maxBullets, 0.5);
+            const bulletSpacing = 0.08;
 
             slideData.bulletPoints.slice(0, maxBullets).forEach((point, index) => {
               const yPos = currentY + index * (bulletHeight + bulletSpacing);
 
-              // 背景卡片（交替颜色）
+              // 确保不会超出幻灯片底部
+              if (yPos + bulletHeight > 5.0) return;
+
+              // 背景卡片
               const bgColor = index % 2 === 0 ? "F1F5F9" : "FFFFFF";
               slide.addShape(pptx.ShapeType.roundRect, {
                 x: 0.7, y: yPos, w: 8.6, h: bulletHeight,
@@ -443,7 +450,7 @@ export default function GeneratePage() {
 
               // 自定义项目符号
               slide.addShape(pptx.ShapeType.ellipse, {
-                x: 0.9, y: yPos + 0.15, w: 0.2, h: 0.2,
+                x: 0.9, y: yPos + (bulletHeight - 0.2) / 2, w: 0.2, h: 0.2,
                 fill: { color: primary },
               });
 
@@ -462,7 +469,7 @@ export default function GeneratePage() {
 
           // 底部装饰
           slide.addShape(pptx.ShapeType.line, {
-            x: 1, y: 5.3, w: 8, h: 0,
+            x: 1, y: 5.2, w: 8, h: 0,
             line: { color: primary + "20", width: 1 },
           });
         }
