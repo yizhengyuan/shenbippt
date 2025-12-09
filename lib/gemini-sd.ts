@@ -52,4 +52,5 @@ export async function generateImage(
 }
 
 // 保持其他函数不变
-export { generateOutline, OutlineRequest, OutlineResponse } from './gemini';
+export { generateOutline } from './gemini';
+export type { GeneratedOutline } from './gemini';
