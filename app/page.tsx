@@ -53,8 +53,9 @@ export default function Home() {
 
       <div className="relative z-10 w-full max-w-4xl px-4 py-8">
         <div className="flex flex-col items-center text-center mb-10 animate-fade-in-up">
-          <h1 className="text-6xl md:text-7xl font-black tracking-tight text-foreground mb-6 drop-shadow-sm">
-            神笔<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-lime-500 animate-gradient-x">PPT</span>
+          <h1 className="text-6xl md:text-7xl font-black tracking-tight mb-6 drop-shadow-sm">
+            <span className="font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-500 animate-gradient-x inline-block mr-2">神笔</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-lime-500 animate-gradient-x">PPT</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">
             让创意在指尖流淌，一键生成专业级演示文稿。
