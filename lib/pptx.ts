@@ -4,8 +4,8 @@ import { Slide } from "@/types";
 
 // 透明文本框样式（无背景、无边框）
 const transparentTextBox = {
-  fill: { type: "none" as const },
-  line: { color: "FFFFFF", transparency: 100, width: 0 },
+  fill: { color: "FFFFFF", transparency: 100 },  // 100% 透明
+  line: { width: 0 },  // 无边框
 };
 
 // 深色主题文字颜色（用于亮色背景）
