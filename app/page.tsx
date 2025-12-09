@@ -54,29 +54,22 @@ export default function Home() {
       <div className="relative z-10 w-full max-w-4xl px-4 py-8">
         <div className="flex flex-col items-center text-center mb-10 animate-fade-in-up">
           <div className="mb-6 relative group cursor-default">
-            <h1 className="text-8xl md:text-9xl font-extrabold tracking-tight flex items-center justify-center gap-2"
-              style={{
-                fontFamily: 'var(--font-baloo), "YouYuan", "Baloo 2", cursive, sans-serif',
-                filter: "drop-shadow(4px 6px 6px rgba(0, 0, 0, 0.15))"
-              }}>
-              <span
-                className="bg-clip-text text-transparent transition-transform duration-300 hover:scale-105 inline-block"
-                style={{
-                  backgroundImage: "linear-gradient(160deg, #FFD166 10%, #FF9F1C 90%)",
-                  textShadow: "-3px -3px 4px rgba(255, 255, 255, 0.6)",
-                  paddingRight: "10px"
-                }}
-              >
-                神笔
+            <h1 className="text-8xl md:text-9xl font-extrabold tracking-tight flex items-center justify-center gap-4 select-none"
+              style={{ fontFamily: 'var(--font-baloo), "YouYuan", cursive' }}>
+              <span className="relative group cursor-default">
+                {/* 阴影层 */}
+                <span className="absolute inset-0 text-slate-300 blur-[2px] transform translate-y-2 select-none" aria-hidden="true">神笔</span>
+                {/* 主体层 */}
+                <span className="relative bg-clip-text text-transparent bg-gradient-to-br from-[#FFD166] to-[#FF9F1C] transition-transform duration-300 group-hover:scale-105 inline-block drop-shadow-sm pb-2">
+                  神笔
+                </span>
               </span>
-              <span
-                className="bg-clip-text text-transparent transition-transform duration-300 hover:scale-105 inline-block"
-                style={{
-                  backgroundImage: "linear-gradient(160deg, #2EC4B6 10%, #2B9348 90%)",
-                  textShadow: "-3px -3px 4px rgba(255, 255, 255, 0.6)"
-                }}
-              >
-                PPT
+              
+              <span className="relative group cursor-default">
+                <span className="absolute inset-0 text-slate-300 blur-[2px] transform translate-y-2 select-none" aria-hidden="true">PPT</span>
+                <span className="relative bg-clip-text text-transparent bg-gradient-to-br from-[#2EC4B6] to-[#2B9348] transition-transform duration-300 group-hover:scale-105 inline-block drop-shadow-sm pb-2">
+                  PPT
+                </span>
               </span>
             </h1>
           </div>
