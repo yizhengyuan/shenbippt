@@ -53,10 +53,33 @@ export default function Home() {
 
       <div className="relative z-10 w-full max-w-4xl px-4 py-8">
         <div className="flex flex-col items-center text-center mb-10 animate-fade-in-up">
-          <h1 className="text-6xl md:text-7xl font-black tracking-tight mb-6 drop-shadow-sm">
-            <span className="font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-500 animate-gradient-x inline-block mr-2">神笔</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-lime-500 animate-gradient-x">PPT</span>
-          </h1>
+          <div className="mb-6 relative group cursor-default">
+            <h1 className="text-8xl md:text-9xl font-extrabold tracking-tight flex items-center justify-center gap-2"
+              style={{
+                fontFamily: 'var(--font-baloo), "YouYuan", "Baloo 2", cursive, sans-serif',
+                filter: "drop-shadow(4px 6px 6px rgba(0, 0, 0, 0.15))"
+              }}>
+              <span
+                className="bg-clip-text text-transparent transition-transform duration-300 hover:scale-105 inline-block"
+                style={{
+                  backgroundImage: "linear-gradient(160deg, #FFD166 10%, #FF9F1C 90%)",
+                  textShadow: "-3px -3px 4px rgba(255, 255, 255, 0.6)",
+                  paddingRight: "10px"
+                }}
+              >
+                神笔
+              </span>
+              <span
+                className="bg-clip-text text-transparent transition-transform duration-300 hover:scale-105 inline-block"
+                style={{
+                  backgroundImage: "linear-gradient(160deg, #2EC4B6 10%, #2B9348 90%)",
+                  textShadow: "-3px -3px 4px rgba(255, 255, 255, 0.6)"
+                }}
+              >
+                PPT
+              </span>
+            </h1>
+          </div>
           <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">
             让创意在指尖流淌，一键生成专业级演示文稿。
           </p>

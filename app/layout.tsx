@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Baloo_2 } from "next/font/google";
+
+const baloo2 = Baloo_2({
+  subsets: ["latin"],
+  weight: ["800"],
+  variable: "--font-baloo",
+});
 
 export const metadata: Metadata = {
   title: "神笔PPT - AI一键生成演示文稿",
@@ -13,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body className="antialiased font-sans">
+      <body className={`antialiased font-sans ${baloo2.variable}`}>
         {children}
       </body>
     </html>
