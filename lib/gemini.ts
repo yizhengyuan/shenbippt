@@ -1,4 +1,4 @@
-import { SlideOutline } from "@/types";
+import { SlideOutline, TemplateStyle } from "@/types";
 
 const siliconFlowApiKey = process.env.SILICONFLOW_API_KEY;
 
@@ -15,20 +15,20 @@ async function fetchWithRetry(
   maxRetries = 3
 ): Promise<Response> {
   let lastError: Error | null = null;
-  
+
   for (let i = 0; i < maxRetries; i++) {
     try {
       const response = await fetch(url, {
         ...options,
         signal: AbortSignal.timeout(25000),
       });
-      
+
       if (response.status === 503) {
         console.log(`Server busy (503), attempt ${i + 1}, retrying...`);
         await delay(1000 * (i + 1));
         continue;
       }
-      
+
       return response;
     } catch (error) {
       lastError = error as Error;
@@ -36,7 +36,7 @@ async function fetchWithRetry(
       await delay(500 * (i + 1));
     }
   }
-  
+
   throw lastError || new Error("Max retries exceeded");
 }
 
@@ -52,16 +52,33 @@ export interface GeneratedOutline {
 
 export async function generateOutline(
   topic: string,
-  pageCount: number
+  pageCount: number,
+  templateStyle?: TemplateStyle
 ): Promise<GeneratedOutline> {
   if (!siliconFlowApiKey) {
     throw new Error("SILICONFLOW_API_KEY is not configured");
   }
 
+  // 根据是否有模版风格，构建不同的 prompt
+  const templateStyleSection = templateStyle ? `
+
+【重要】用户已上传模版，请严格按照以下风格生成内容：
+- 主色调: ${templateStyle.primaryColor}
+- 辅助色: ${templateStyle.secondaryColor}
+- 背景风格: ${templateStyle.backgroundColor}
+- 布局风格: ${templateStyle.layout}
+- 标题风格: ${templateStyle.titleStyle}
+- 整体调性: ${templateStyle.mood}
+- 视觉元素: ${templateStyle.visualElements}
+- 配图风格提示: ${templateStyle.imageStylePrompt}
+
+所有 imagePrompt 都必须包含以下风格描述: "${templateStyle.imageStylePrompt}"
+` : "";
+
   const prompt = `生成PPT大纲，主题：${topic}
 
 【重要】必须生成正好 ${pageCount} 页，不多不少！
-
+${templateStyleSection}
 要求：
 - 第1页：封面页
 - 第2到第${pageCount - 1}页：内容页
@@ -77,6 +94,10 @@ export async function generateOutline(
 - 商业主题 -> 办公室场景，握手，会议，极简商务风
 
 确定一个统一视觉风格(styleTheme)，所有imagePrompt必须包含相同的colorTone和style。
+${templateStyle ? `styleTheme 必须与用户模版风格保持一致，使用以下值：
+- colorTone: "${templateStyle.imageStylePrompt.split(',')[0] || templateStyle.mood}"
+- style: "${templateStyle.mood}"
+- mood: "${templateStyle.mood}"` : ""}
 
 返回JSON格式（slides数组必须有${pageCount}个元素）：
 {"styleTheme":{"name":"风格名","colorTone":"warm vintage","style":"photorealistic","mood":"historical"},"slides":[{"title":"...","imagePrompt":"Vintage photograph of 19th century factory, sepia tone, detailed machinery, 16:9"}]}
@@ -117,7 +138,7 @@ export async function generateOutline(
 
     const parsed = JSON.parse(cleanedText);
     let slides = parsed.slides as SlideOutline[];
-    
+
     // 校验并修正页数
     if (slides.length < pageCount) {
       console.warn(`AI only generated ${slides.length} slides, expected ${pageCount}. Padding...`);
@@ -136,7 +157,7 @@ export async function generateOutline(
       console.warn(`AI generated ${slides.length} slides, expected ${pageCount}. Trimming...`);
       slides = slides.slice(0, pageCount);
     }
-    
+
     return {
       styleTheme: parsed.styleTheme || {
         name: "Professional Blue",
@@ -159,7 +180,7 @@ function delay(ms: number) {
 
 // 图片生成函数 - 使用 SiliconFlow Kolors
 export async function generateImage(
-  prompt: string, 
+  prompt: string,
   styleTheme?: { colorTone: string; style: string; mood: string }
 ): Promise<string> {
   if (!siliconFlowApiKey) {
@@ -167,16 +188,16 @@ export async function generateImage(
   }
 
   // 构建简洁的提示词
-  const stylePrefix = styleTheme 
+  const stylePrefix = styleTheme
     ? `${styleTheme.colorTone}, ${styleTheme.style} style.`
     : "high quality, professional style.";
-  
+
   // 移除 "Abstract background" 和 "Geometric patterns" 这种强限制
   // 让 prompt 更加自由，只保留必要的质量控制
   const enhancedPrompt = `${stylePrefix} ${prompt}. No text, no faces, 16:9, high resolution, cinematic lighting.`;
 
   const maxRetries = 5;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await fetch(`${SILICONFLOW_BASE_URL}/images/generations`, {
@@ -196,7 +217,7 @@ export async function generateImage(
 
       if (response.status === 429) {
         const waitTime = 3000 * (attempt + 1);
-        console.log(`Rate limited, waiting ${waitTime/1000}s...`);
+        console.log(`Rate limited, waiting ${waitTime / 1000}s...`);
         await delay(waitTime);
         continue;
       }
@@ -208,7 +229,7 @@ export async function generateImage(
       }
 
       const data = await response.json();
-      
+
       if (data.images?.[0]?.url) {
         return data.images[0].url;
       }
@@ -226,6 +247,6 @@ export async function generateImage(
       await delay(2000 * (attempt + 1));
     }
   }
-  
+
   throw new Error("Max retries exceeded");
 }

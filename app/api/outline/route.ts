@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateOutline } from "@/lib/gemini";
-import { OutlineRequest } from "@/types";
+import { OutlineRequest, TemplateStyle } from "@/types";
 
 // 设置最大执行时间（秒）
 export const maxDuration = 60;
 
+interface ExtendedOutlineRequest extends OutlineRequest {
+  templateStyle?: TemplateStyle;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body: OutlineRequest = await request.json();
-    const { topic, pageCount } = body;
+    const body: ExtendedOutlineRequest = await request.json();
+    const { topic, pageCount, templateStyle } = body;
 
     if (!topic || !pageCount) {
       return NextResponse.json(
@@ -24,11 +28,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await generateOutline(topic, pageCount);
+    const result = await generateOutline(topic, pageCount, templateStyle);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       slides: result.slides,
-      styleTheme: result.styleTheme 
+      styleTheme: result.styleTheme
     });
   } catch (error) {
     console.error("Error generating outline:", error);
@@ -38,4 +42,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

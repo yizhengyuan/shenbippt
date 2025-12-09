@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import PptxGenJS from "pptxgenjs";
 import { Button } from "@/components/ui/button";
 import { SlideCard } from "@/components/SlideCard";
-import { Slide, SlideOutline, StyleTheme } from "@/types";
+import { Slide, SlideOutline, StyleTheme, TemplateStyle } from "@/types";
 
 // 禁用静态生成，强制使用客户端渲染
 export const dynamic = 'force-dynamic';
@@ -27,11 +27,14 @@ export default function GeneratePage() {
   const [isExporting, setIsExporting] = useState(false);
   // 保存统一的风格主题
   const styleThemeRef = useRef<StyleTheme | null>(null);
+  // 用户上传的模版风格
+  const [templateStyle, setTemplateStyle] = useState<TemplateStyle | null>(null);
 
   // 从 sessionStorage 获取参数
   useEffect(() => {
     const storedTopic = sessionStorage.getItem("ppt-topic");
     const storedPageCount = sessionStorage.getItem("ppt-pageCount");
+    const storedTemplateStyle = sessionStorage.getItem("ppt-templateStyle");
 
     if (!storedTopic) {
       router.push("/");
@@ -40,6 +43,15 @@ export default function GeneratePage() {
 
     setTopic(storedTopic);
     setPageCount(parseInt(storedPageCount || "5", 10));
+
+    // 读取用户上传的模版风格
+    if (storedTemplateStyle) {
+      try {
+        setTemplateStyle(JSON.parse(storedTemplateStyle));
+      } catch (e) {
+        console.error("Failed to parse template style:", e);
+      }
+    }
   }, [router]);
 
   // 计时器
@@ -69,21 +81,21 @@ export default function GeneratePage() {
       // 如果已经是 base64，直接返回
       if (url.startsWith("data:")) return url;
       if (!url || url.trim() === "") return "";
-      
+
       // 添加超时控制（10秒）
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
+
       const response = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         console.error("Failed to fetch image:", response.status);
         return ""; // 返回空字符串表示无图片
       }
-      
+
       const blob = await response.blob();
-      
+
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
@@ -104,7 +116,12 @@ export default function GeneratePage() {
     const response = await fetch("/api/outline", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic, pageCount }),
+      body: JSON.stringify({
+        topic,
+        pageCount,
+        // 传递用户上传的模版风格
+        templateStyle: templateStyle || undefined,
+      }),
     });
 
     if (!response.ok) {
@@ -113,16 +130,21 @@ export default function GeneratePage() {
 
     const data = await response.json();
     return { slides: data.slides, styleTheme: data.styleTheme };
-  }, [topic, pageCount]);
+  }, [topic, pageCount, templateStyle]);
 
   // 生成单张图片（带重试，传递统一风格，自动转 base64）
   const generateImage = async (prompt: string, styleTheme?: StyleTheme, retries = 3): Promise<string> => {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
+        // 如果有用户上传的模版风格，使用其 imageStylePrompt 增强描述
+        const enhancedPrompt = templateStyle?.imageStylePrompt
+          ? `${templateStyle.imageStylePrompt}. ${prompt}`
+          : prompt;
+
         const response = await fetch("/api/image", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, styleTheme }),
+          body: JSON.stringify({ prompt: enhancedPrompt, styleTheme }),
         });
 
         if (response.status === 429) {
@@ -137,7 +159,7 @@ export default function GeneratePage() {
 
         const data = await response.json();
         const imageUrl = data.imageUrl;
-        
+
         // 立即将远程 URL 转换为 base64，加速后续导出
         const base64Image = await urlToBase64(imageUrl);
         return base64Image;
@@ -186,18 +208,18 @@ export default function GeneratePage() {
 
       // 任务队列
       const queue = initialSlides.map((slide, index) => ({ slide, index }));
-      
+
       const processQueue = async () => {
         while (queue.length > 0) {
           const item = queue.shift();
           if (!item) break;
 
           const { slide, index } = item;
-          
+
           try {
             // 添加随机延迟，避免完全同时请求
             await delay(Math.random() * 1000 + 500);
-            
+
             // 传递统一风格主题给图片生成
             const imageUrl = await generateImage(slide.imagePrompt, styleTheme);
             setSlides((prev) =>
@@ -266,12 +288,12 @@ export default function GeneratePage() {
 
     try {
       setIsExporting(true);
-      
+
       const pptx = new PptxGenJS();
       pptx.title = topic;
       pptx.author = "神笔PPT";
       pptx.subject = topic;
-      
+
       // 设置幻灯片尺寸为 16:9
       pptx.defineLayout({ name: "LAYOUT_16x9", width: 10, height: 5.625 });
       pptx.layout = "LAYOUT_16x9";
@@ -280,7 +302,7 @@ export default function GeneratePage() {
         const slide = pptx.addSlide();
         const isFirstSlide = slideData.pageNumber === 1;
         const isLastSlide = slideData.pageNumber === slides.length;
-        
+
         // 添加背景图片
         if (slideData.imageUrl && slideData.imageUrl.startsWith("data:")) {
           try {
@@ -328,7 +350,7 @@ export default function GeneratePage() {
             bold: true, align: "left", valign: "middle",
             fill: textBg, // 添加背景
           });
-          
+
           // 内容区域背景
           const contentBgY = 1.0;
           const contentBgH = 4.0;
@@ -355,7 +377,7 @@ export default function GeneratePage() {
           if (slideData.bulletPoints && slideData.bulletPoints.length > 0) {
             const bulletTexts = slideData.bulletPoints.map(point => ({
               text: point,
-              options: { 
+              options: {
                 bullet: { type: "bullet" as const },
                 fontSize: 14, color: "FFFFFF", fontFace: "Arial",
               }
@@ -366,7 +388,7 @@ export default function GeneratePage() {
             });
           }
         }
-        
+
         // 页码
         slide.addText(`${slideData.pageNumber}`, {
           x: 9, y: 5.1, w: 0.5, h: 0.4,
@@ -477,9 +499,9 @@ export default function GeneratePage() {
         {slides.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-20">
             {slides.map((slide, index) => (
-              <div 
-                key={slide.id} 
-                className="animate-fade-in-up" 
+              <div
+                key={slide.id}
+                className="animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <SlideCard
