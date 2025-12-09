@@ -39,16 +39,6 @@ export async function createPptx(slides: Slide[], title: string): Promise<Buffer
       }
     }
 
-    // 添加半透明背景层 - 增强不透明度以提高文字可读性
-    // transparency: 70 表示 30% 不透明度的黑色
-    slide.addShape("rect", {
-      x: 0,
-      y: 0,
-      w: "100%",
-      h: "100%",
-      fill: { color: "000000", transparency: 70 },
-    });
-
     // 封面页和结尾页使用居中大标题布局
     if (isFirstSlide || isLastSlide) {
       // 主标题 - 居中显示
