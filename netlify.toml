@@ -9,6 +9,12 @@
 [functions]
   external_node_modules = ["pptxgenjs"]
   node_bundler = "esbuild"
+  # 增加超时时间到60秒，以便 AI 模型分析图片
+  directory = ".netlify/functions"
+
+# 针对特定路由设置更长超时
+[functions."api/*"]
+  timeout = 60
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
